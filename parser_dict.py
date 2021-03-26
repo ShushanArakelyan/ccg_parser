@@ -13,6 +13,7 @@ STRING2PREDICATE = {
     "merge": ["$Transform"],
     "map": ["$Transform"],
     'and': ['$And'],
+    'into': ['$Return'],
 }
 
 WORD_NUMBERS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven']
@@ -30,9 +31,6 @@ RAW_LEXICON = ''' :- S, NP, N, VP
      $The => N/N {\\x.x}
      $The => NP/NP {\\x.x}
 
-     $UNK => NP/NP {\\y x.'@ToString'(x)}
-     $UNK => N/N {\\y x.'@ToString'(x)}
-
      $Dict => N {'Dict'}
      $Dict => NP {'Dict'}
      $List => N {'List'}
@@ -40,8 +38,13 @@ RAW_LEXICON = ''' :- S, NP, N, VP
 
      $And => var\\.,var/.,var {\\x y.'@And'(x,y)}
      $Find => S/NP {\\x.'@Find'(x)}
-     $Return => S/N {\\x.'@Return'(x)}
-     $Transform => (S/NP)/NP {\\x y.'@Transform'(x, y)}
+
+     $Return => S/NP {\\x.'@Return'(x)}
+     $Return => (S\\S)/NP {\\y x.'@Return'(y, x)}
+
+     $Create => S/NP {\\x.'@Create'(x)}
+
+     $Transform => S/NP {\\x.'@Transform'(x)}
 '''
 QUESTION_WORDS = [
     "(what|what's)",
