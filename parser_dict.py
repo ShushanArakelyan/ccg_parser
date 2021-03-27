@@ -1,5 +1,6 @@
 STRING2PREDICATE = {
     "dict": ["$Dict"],
+    "dicts": ["$Dict"],
     "dictionary": ["$Dict"],
     "int": ["$Int"],
     "integer": ["$Int"],
@@ -8,6 +9,10 @@ STRING2PREDICATE = {
     "array": ["$List"],
     "find": ["$Find"],
     "the": ["$The"],
+    "return": ["$Return"],
+    "merge": ["$Transform"],
+    "map": ["$Transform"],
+    'and': ['$And'],
 }
 
 WORD_NUMBERS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven']
@@ -24,18 +29,19 @@ RAW_LEXICON = ''' :- S, NP, N, VP
 
      $The => N/N {\\x.x}
      $The => NP/NP {\\x.x}
-     
-     $UNK => NP/NP {\\y x.'@ToString'(y)}
-     $UNK => N/N {\\y x.'@ToString'(y)}
-     
+
+     $UNK => NP/NP {\\y x.'@ToString'(x)}
+     $UNK => N/N {\\y x.'@ToString'(x)}
+
      $Dict => N {'Dict'}
      $Dict => NP {'Dict'}
      $List => N {'List'}
      $List => NP {'List'}
 
-     and => var\\.,var/.,var {\\x y.'@And'(x,y)}
+     $And => var\\.,var/.,var {\\x y.'@And'(x,y)}
      $Find => S/NP {\\x.'@Find'(x)}
-     is => (S\\NP)/NP {\\y x.'@Is'(x,y)}
+     $Return => S/N {\\x.'@Return'(x)}
+     $Transform => (S/NP)/NP {\\x y.'@Transform'(x, y)}
 '''
 QUESTION_WORDS = [
     "(what|what's)",

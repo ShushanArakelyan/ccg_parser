@@ -105,10 +105,11 @@ def string_to_predicate(s):
     elif s in STRING2PREDICATE:
         return STRING2PREDICATE[s]
     elif s.isdigit():
-        return ["'" + s + "'"]
+        # return ["'" + s + "'"]
+        return ["$UNK"]
     elif s in WORD2NUMBER:
-        # return ["$UNK"]
-        return ["'" + WORD2NUMBER[s] + "'"]
+        return ["$UNK"]
+        # return ["'" + WORD2NUMBER[s] + "'"]
     # elif s:
     #     return ["$UNK"]
     else:
@@ -274,7 +275,7 @@ def quote_word_lexicon(sentence):
 
 def example():
     # These work
-    ts = tokenize("find lists".split(' '))
+    ts = tokenize("merge 2 dicts and return list".split(' '))
     # ts = tokenize("find the list".split(' '))
 
     # These do not work
