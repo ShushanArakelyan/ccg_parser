@@ -107,15 +107,21 @@ def string_to_predicate(s):
     elif s.isdigit():
         return ["'" + s + "'"]
     elif s in WORD2NUMBER:
-        # return ["$UNK"]
         return ["'" + WORD2NUMBER[s] + "'"]
-    # elif s:
-    #     return ["$UNK"]
+    # TODO: maybe replace the allow_phrases part with a check here
+    # to see if we are handling a single word or a phrase?
+
+    # if the word is not found in our vocabulary of predicates, add it
     else:
-        return []
+        global RAW_LEXICON
+        new_predicate = "$" + s
+        new_rules = new_predicate + "  => NP {'" + s + "'}\n"
+        new_rules += new_predicate + " => NP/NP {\\x. '@Concat'('" + s  +"', x)}\n"
+        RAW_LEXICON += new_rules
+        return [new_predicate]
 
 
-def tokenize(sentence):
+def tokenize(sentence, allow_phrases=False):
     """input: a list of tokens;
     output: a list of possible tokenization of the sentence;
     each token can be mapped to multiple predicates"""
@@ -127,6 +133,8 @@ def tokenize(sentence):
             if i + _range > len(sentence):
                 break
             phrase = ' '.join(sentence[i:i + _range])
+            if not allow_phrases and _range > 1:
+                break
             predicates = string_to_predicate(phrase)
             for temp_result in log[i]:
                 for predicate in predicates:
@@ -138,6 +146,7 @@ def tokenize(sentence):
 
 def get_word_name(layer, st, idx):
     return "$Layer{}_St{}_{}".format(str(layer), str(st), str(idx))
+
 
 def get_entry(word_name, category, semantics):
     return "\n\t\t{0} => {1} {{{2}}}".format(word_name, str(category), str(semantics))
@@ -167,114 +176,9 @@ def quote_word_lexicon(sentence):
     return ret
 
 
-### Main Class for Parser ###
-
-# class Parser():
-#     def __init__(self):
-#         super(Parser, self).__init__()
-#         self.raw_lexicon = RAW_LEXICON
-#         self.beam_width = BEAM_WIDTH
-#
-#     def parse(self, sentence, beam=True):
-#         """
-#         :param sentence: a list of tokens in one sentence.
-#                 e.g. ['"may_be"', '$Is', '$Between', '$ArgX', '$And', '$ArgY']
-#         :return: a list of successful parses.
-#         """
-#         beam_lexicon = copy.deepcopy(self.raw_lexicon) + quote_word_lexicon(sentence)
-#
-#         # the first index of forms is layer
-#         # the second index of forms is starting index
-#         all_forms = [[[token] for token in sentence]]
-#
-#         # parsed results to be returned
-#         ret = []
-#
-#         # Width of tokens to be parsed. Start with width 1 and stack to len(sentence)
-#         for layer in range(1, len(sentence)):
-#             layer_form = []
-#
-#             # update the lexicon from previous layers
-#             lex = lexicon.fromstring(beam_lexicon, include_semantics=True)
-#             parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
-#
-#             # parse the span (st, st+layer)
-#             for st in range(0, len(sentence) - layer):
-#                 form = []
-#                 memory = []  # keep a memory and remove redundant parses
-#                 word_index = 0
-#                 ed = st + layer
-#                 # try to combine (st, split), (split+1, ed) into (st, ed)
-#                 for split in range(st, ed):
-#
-#                     # get candidates for (st, split) and (split+1, ed)
-#                     words_L = all_forms[split-st][st]
-#                     words_R = all_forms[ed-split-1][split+1]
-#
-#                     for word_L in words_L:
-#                         for word_R in words_R:
-#                             # try to combine word_L and word_R
-#                             try:
-#                                 for parse in parser.parse([word_L, word_R]):
-#                                     token, _ = parse.label()
-#                                     category, semantics = token.categ(), token.semantics()
-#                                     memory_key = str(category) + '_' + str(semantics)
-#                                     if memory_key not in memory:
-#                                         memory.append(memory_key)
-#                                         word_index += 1
-#                                         form.append((parse, category, semantics, word_index))
-#                             except (AssertionError, SyntaxError) as e:
-#                                 logger.info('Error when parsing {} and {}'.format(word_L, word_R))
-#                                 logger.info('Error information: {}'.format(e.args))
-#
-#                 to_add = []
-#                 for item in form:
-#                     parse, category, semantics, word_index = item
-#                     word_name = get_word_name(layer, st, word_index)
-#                     to_add.append(word_name)
-#                     beam_lexicon += get_entry(word_name, category, semantics)
-#
-#                     # if this is the last layer (covering the whole sentence)
-#                     # add this to output
-#                     if layer == len(sentence) - 1:
-#                         ret.append(str(semantics))
-#                 layer_form.append(to_add)
-#
-#             all_forms.append(layer_form)
-#
-#         # filter incomplete parses
-#         ret = list(filter(lambda x: x.startswith("'@"), ret))
-#         return list(ret)
-
-# def unit_test():
-#     sent = 'find the list.'
-#
-#     # Split the long explanation into a list of sentences.
-#     sentences = preprocess_sent(sent)
-#
-#     # For each sentence try to tokenize according to our lexicon dict.
-#     tokenized_sentences = [tokenize(sentence) for sentence in sentences]
-#
-#     parser = Parser()
-#
-#     print('=' * 20 + ' start parsing ' + '=' * 20 + '\n')
-#
-#     for i, sentence in enumerate(tokenized_sentences):
-#         print('=== sentence {}: {}'.format(i, sentences[i]))
-#         rule_list_sentence = []
-#         for potential_sentence in sentence:
-#             print('sentence predicates: {}'.format(potential_sentence))
-#             all_possible_parses = parser.parse(potential_sentence)
-#             if len(all_possible_parses) > 0:
-#                 rule_list_sentence += all_possible_parses
-#                 print('parses: {}\n'.format(all_possible_parses))
-#
-# if __name__ == "__main__":
-#     unit_test()
-
 def example():
     # These work
-    ts = tokenize("find lists".split(' '))
+    # ts = tokenize("find lists".split(' '))
     # ts = tokenize("find the list".split(' '))
 
     # These do not work
@@ -283,13 +187,24 @@ def example():
     # desired output after parsing: "@Find('List', '2')" or "@Find('List', '2 lists')"
     # b) how to handle out of vocabulary expressions, we want to pass
     # them as a textual argument, e.g.
-    # ts = tokenize("find jibber-jabber gobbledygook lists".split(' '))
+    # ts = tokenize("find jibberjabber gobbledygook lists".split(' '))
     # desired output after parsing: @Find('List', 'jibber-jabber gobbledygook lists')
-    print(ts)
+
+    # Example: "Finding the index of an item in a list"
+    # Example: "Find intersection of two nested lists?"
+    # 1) *.lowercase()
+    # 1a) remove question words and question marks at the end
+    #TODO: 2) bring verbs to their canonical form: finding -> find
+    #"find the index of an item in a list" -> @Find(what = "the index of an item"[NP], where="in a list"[PP?])
+    #"find intersection of two nested lists" -> @Find(what = "intersection of two nested lists"[NP])
+
+    # ts = tokenize("find the index of an item in a list".split(' '))
+    # ts = tokenize("find intersection of nested lists".split(' '))
+    # ts = tokenize("find current dir and files dir".split(' ')) # AssertionError: `'@And'(\x.'@Concat'('files',x),\x.'@Concat'('dir',x))` must be a lambda expression
+    ts = tokenize("find all files in a dir with extension .txt".split(' ')) # nltk.sem.logic.LogicalExpressionException: Unexpected token: '.'. in '.txt'
     lex = lexicon.fromstring(RAW_LEXICON, include_semantics=True)
     parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
     for tsi in ts:
-        print(tsi)
         for parse in parser.parse(tsi):
             chart.printCCGDerivation(parse)
 

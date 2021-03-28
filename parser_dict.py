@@ -8,6 +8,10 @@ STRING2PREDICATE = {
     "array": ["$List"],
     "find": ["$Find"],
     "the": ["$The"],
+
+    "an": ["$The"],
+    "and": ["$And"],
+    "a": ["$The"],
 }
 
 WORD_NUMBERS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven']
@@ -24,10 +28,6 @@ RAW_LEXICON = ''' :- S, NP, N, VP
 
      $The => N/N {\\x.x}
      $The => NP/NP {\\x.x}
-     
-     $UNK => NP/NP {\\y x.'@ToString'(y)}
-     $UNK => N/N {\\y x.'@ToString'(y)}
-     
      $Dict => N {'Dict'}
      $Dict => NP {'Dict'}
      $List => N {'List'}
