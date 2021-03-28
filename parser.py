@@ -105,8 +105,10 @@ def string_to_predicate(s):
     elif s in STRING2PREDICATE:
         return STRING2PREDICATE[s]
     elif s.isdigit():
-        return ["'" + s + "'"]
+        # return ["'" + s + "'"]
+        return ["$UNK"]
     elif s in WORD2NUMBER:
+        # return ["$UNK"]
         return ["'" + WORD2NUMBER[s] + "'"]
     # TODO: maybe replace the allow_phrases part with a check here
     # to see if we are handling a single word or a phrase?
@@ -178,7 +180,7 @@ def quote_word_lexicon(sentence):
 
 def example():
     # These work
-    # ts = tokenize("find lists".split(' '))
+    ts = tokenize("merge 2 dicts and return list".split(' '))
     # ts = tokenize("find the list".split(' '))
 
     # These do not work
@@ -205,6 +207,7 @@ def example():
     lex = lexicon.fromstring(RAW_LEXICON, include_semantics=True)
     parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
     for tsi in ts:
+        print(tsi)
         for parse in parser.parse(tsi):
             chart.printCCGDerivation(parse)
 

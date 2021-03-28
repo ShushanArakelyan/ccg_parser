@@ -8,9 +8,11 @@ STRING2PREDICATE = {
     "array": ["$List"],
     "find": ["$Find"],
     "the": ["$The"],
-
+    "return": ["$Return"],
+    "merge": ["$Transform"],
+    "map": ["$Transform"],
+    "and": ['$And'],
     "an": ["$The"],
-    "and": ["$And"],
     "a": ["$The"],
 }
 
@@ -33,9 +35,10 @@ RAW_LEXICON = ''' :- S, NP, N, VP
      $List => N {'List'}
      $List => NP {'List'}
 
-     and => var\\.,var/.,var {\\x y.'@And'(x,y)}
+     $And => var\\.,var/.,var {\\x y.'@And'(x,y)}
      $Find => S/NP {\\x.'@Find'(x)}
-     is => (S\\NP)/NP {\\y x.'@Is'(x,y)}
+     $Return => S/N {\\x.'@Return'(x)}
+     $Transform => (S/NP)/NP {\\x y.'@Transform'(x, y)}
 '''
 QUESTION_WORDS = [
     "(what|what's)",
