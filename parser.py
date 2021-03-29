@@ -180,7 +180,7 @@ def quote_word_lexicon(sentence):
 
 def example():
     # These work
-    ts = tokenize("merge 2 dicts and return list".split(' '))
+    ts = tokenize("split string every nth character".split(' '))
     # ts = tokenize("find the list".split(' '))
 
     # These do not work
@@ -203,13 +203,18 @@ def example():
     # ts = tokenize("find the index of an item in a list".split(' '))
     # ts = tokenize("find intersection of nested lists".split(' '))
     # ts = tokenize("find current dir and files dir".split(' ')) # AssertionError: `'@And'(\x.'@Concat'('files',x),\x.'@Concat'('dir',x))` must be a lambda expression
-    ts = tokenize("find all files in a dir with extension .txt".split(' ')) # nltk.sem.logic.LogicalExpressionException: Unexpected token: '.'. in '.txt'
+    # ts = tokenize("find all files in a dir with extension .txt".split(' ')) # nltk.sem.logic.LogicalExpressionException: Unexpected token: '.'. in '.txt'
+    # ts = tokenize("use glob to find files recursively".split(' '))
+    # ts = tokenize("find the duplicates in a list and create another list with them".split(' '))
     lex = lexicon.fromstring(RAW_LEXICON, include_semantics=True)
     parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
     for tsi in ts:
         print(tsi)
         for parse in parser.parse(tsi):
             chart.printCCGDerivation(parse)
+            # just print the first one
+            break
+        break
 
 if __name__ == "__main__":
     example()
