@@ -6,6 +6,7 @@ POTENTIAL_FUTURE_PREDICATES = [
     "Tuple",
     "Duplicate -> Check[EQ]",
     "Output",
+    "that -> and",
 ]
 
 
@@ -16,10 +17,14 @@ STRING2PREDICATE = {
     "dictionary": ["$Dict"],
     "int": ["$Int"],
     "integer": ["$Int"],
+    "integers": ["$Int"],
     "list": ["$List"],
     "lists": ["$List"],
+    "tuple": ["$Tuple"],
+    "tuples": ["$Tuple"],
     "array": ["$List"],
     "string": ["$String"],
+    "strings": ["$String"],
     "str": ["$String"],
     "file": ["$File"],
     "files": ["$File"],
@@ -30,7 +35,7 @@ STRING2PREDICATE = {
     "boolean": ["$Bool"],
     "char": ["$Char"],
     "character": ["$Char"],
-    "unicode": ["$Char"],
+    "characters": ["$Char"],
     "unicode": ["$Char"],
     "path": ["$Path"],
     "dir": ["$Path"],
@@ -38,21 +43,27 @@ STRING2PREDICATE = {
     "set": ["$Set"],
     "class": ["$Class"],
     "object": ["$Class"],
-    "object": ["$Class"],
     "member": ["$Class"],
     "func": ["$Func"],
     "function": ["$Func"],
     "method": ["$Func"],
     "index": ["$Index"],
     "id": ["$Index"],
+    "regex": ["$Regex"],
+    "column": ["$Column"],
+    "columns": ["$Column"],
+    "null": ["$Null"],
 
-    #det-s
+    # det-s
     "the": ["$The"],
     "an": ["$The"],
     "a": ["$The"],
 
-    #conjunctions
+    # conjunctions
     "and": ["$And"],
+    "by": ["$By"],
+    "that": ["$And"],
+    "then": ["$And"],
     # "both": ["$And"],
     # "too": ["$And"],
     # "also": ["$And"],
@@ -64,23 +75,36 @@ STRING2PREDICATE = {
     "not": ["$Not"],
     "nothing": ["$Not"],
     "never": ["$Not"],
+    "without": ["$Without"],
 
-    #Transforming verbs
+    # Transforming verbs
     "find": ["$Find"],
     # "find if": ["$Check"]
     # "find out": ["$Return"]?
-    "return": ["$Return"], # kind of the same as "get"? return smth [from smth/smwh]
-    "merge": ["$Merge"], # merge smth-s into smth; merge smth-s; merge smth with smth; merge in NP[e.g. merge sort]
+    # kind of the same as "get"? return smth [from smth/smwh]
+    "return": ["$Return"],
+    # merge smth-s into smth; merge smth-s; merge smth with smth; merge in NP[e.g. merge sort]
+    "merge": ["$Merge"],
     "sort": ["$Sort"],
     "concat": ["$Concatenate"],
     "concatenate": ["$Concatenate"],
     "concatenation": ["$Concatenate"],
     "combine": ["$Concatenate"],
-    "split": ["Split"],
+    "split": ["$Split"],
+    "splitting": ["$Split"],
     "round": ["$Round"],
+    "rounding": ["$Round"],
     "convert": ["$Convert"],
+    "converting": ["$Convert"],
     "add": ["$Add"],
+    "addition": ["$Add"],
+    "adding": ["$Add"],
+    "insert": ["$Add"],
+    "inserting": ["$Add"],
     "remove": ["$Remove"],
+    "removing": ["$Remove"],
+    "delete": ["$Remove"],
+    "deleting": ["$Remove"],
     "pad": ["$Pad"],
     "map": ["$Dict", "$Map"],
     "create": ["$Create"],
@@ -89,13 +113,16 @@ STRING2PREDICATE = {
     "init": ["$Create"],
     "declare": ["$Create"],
     "copy": ["$Create"],
+    "make": ["$Create"],
     "load": ["$Load"],
     "read": ["$Load"],
     "get": ["$Load"],
+    "getting": ["$Load"],
+    "select": ["$Load"],
     "save": ["$Save"],
     "set": ["$Save"],
     "write": ["$Save"],
-    "print": ["$Save"],
+    "print": ["$Print"],
     "iterate": ["$Iterate"],
     "iter": ["$Iterate"],
     "it": ["$Iterate"],
@@ -105,8 +132,13 @@ STRING2PREDICATE = {
     "check": ["$Compare"],
     "comp": ["$Compare"],
     "compare": ["$Compare"],
+    "parse": ["$Parse"],
+    "assign": ["$Assign"],
+    "assigning": ["$Assign"],
+    "sort": ["$Sort"],
+    "sorting": ["$Sort"],
 
-    #Conditions
+    # Conditions
     "exist": ["$Exist"],
     "exists": ["$Exist"],
     "largest": ["$Largest"],
@@ -124,7 +156,8 @@ STRING2PREDICATE = {
     # "as": ["$as"],
 }
 
-WORD_NUMBERS = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven']
+WORD_NUMBERS = ['zero', 'one', 'two', 'three', 'four',
+                'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven']
 WORD2NUMBER = {elem: str(i) for i, elem in enumerate(WORD_NUMBERS)}
 
 
@@ -132,20 +165,22 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     Det :: NP/N
     Pro :: NP
     Modal :: S\\NP/VP
-    
+
     TV :: VP/NP
     DTV :: TV/NP
     PP :: (NP\\NP)/NP
-    
+
     $The => N/N {\\x.x}
     $The => NP/NP {\\x.x}
-    
+
     $Dict => N {'Dict'}
     $Dict => NP {'Dict'}
     $Int => N {'Int'}
     $Int => NP {'Int'}
     $List => N {'List'}
     $List => NP {'List'}
+    $Tuple => N {'Tuple'}
+    $Tuple => NP {'Tuple'}
     $String => N {'String'}
     $String => NP {'String'}
     $File => N {'File'}
@@ -169,9 +204,16 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Func => NP {'Func'}
     $Index => N {'Index'}
     $Index => NP {'Index'}
-
+    $Regex => N {'Regex'}
+    $Regex => NP {'Regex'}
+    $Column => N {'Column'}
+    $Column => NP {'Column'}
+    $Null => N {'Null'}
+    $Null => NP {'Null'}
 
     $And => var\\.,var/.,var {\\y x.'@And'(x,y)}
+    $By => var\\.,var/.,var {\\y x.'@By'(x,y)}
+    $Without => var\\.,var/.,var {\\y x.'@Without'(x,y)}
     $Find => S/NP {\\x.'@Find'(x)}
     $Find => (S\\NP)/NP {\\y x.'@Find'('@Desc'(x), y)}
     $Return => S/NP {\\x.'@Return'(x)}
@@ -180,13 +222,38 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Merge => NP {'Merge'}
     $Merge => (S\\NP)/NP {\\y x. '@Merge'('@Desc'(x), y)}
     $Sort => S/NP {\\x. '@Sort'(x)}
-    $Sort => (S/NP)/NP {\\y x. '@Sort'(@'Desc'(x), y)}
+    $Sort => (S/NP)/NP {\\y x. '@Sort'('@Desc'(x), y)}
     $Sort => (S\\NP)/NP {\\y x. '@Sort'('@Desc'(x), y)}
-    $Concatenate => S/NP {\\x. '@$Concatenate'(x)} # can be also Merge
-    $Concatenate => S/NP/NP {\\x y. '@$Concatenate'(x, y)} # can be also Merge
-'''
+    $Concatenate => S/NP {\\x. '@Concatenate'(x)} # can be also Merge
+    $Concatenate => S/NP/NP {\\x y. '@Concatenate'(x, y)} # can be also Merge
+    $Split => NP {'Split'}
+    $Split => S/NP {\\x. '@Split'(x)}
+    $Split => (S/NP)/NP {\\y x. '@Split'('@Desc'(x), y)}
+    $Split => (S\\NP)/NP {\\y x. '@Split'('@Desc'(x), y)}
+    $Round => S/NP {\\x. '@Round'(x)}
+    $Convert => S/NP {\\x. '@Convert'(x)}
+    $Convert => (S/NP)/NP {\\y x. '@Convert'('@Desc'(x), y)}
+    $Add => NP {'Add'}
+    $Add => S/NP {\\x. '@Add'(x)}
+    $Add => (S/NP)/NP {\\y x. '@Add'('@Desc'(x), y)}
+    $Add => (S\\NP)/NP {\\y x. '@Add'('@Desc'(x), y)}
 
-#
+    $Parse => S/NP {\\x. '@Parse'(x)}
+    $Parse => (S/NP)/NP {\\y x. '@Parse'('@Desc'(x), y)}
+    $Load => S/NP {\\x. '@Load'(x)}
+    $Load => S\\NP {\\x. '@Load'(x)}
+    $Load => (S\\NP)/NP {\\y x. '@Load'('@Desc'(x), y)}
+    $Assign => S/NP {\\x. '@Assign'(x)}
+    $Assign => (S\\NP)/NP {\\y x. '@Assign'('@Desc'(x), y)}
+    $Create => S/NP {\\x. '@Create'(x)}
+    $Create => (S\\NP)/NP {\\y x. '@Create'('@Desc'(x), y)}
+    $Remove => S/NP {\\x. '@Remove'(x)}
+    $Sort => S/NP {\\x. '@Sort'(x)}
+    $Print => NP {'Print'}
+
+
+    $Not => S/NP {\\x. '@Not'(x)}
+'''
 #
 #      $index => NP {'index'}
 #      $index => NP/NP {\\x. '@Concat'('index', x)}
