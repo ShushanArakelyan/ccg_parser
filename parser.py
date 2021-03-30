@@ -123,9 +123,6 @@ def string_to_predicate(s):
         new_rules = new_predicate + "  => NP {'" + s + "'}\n"
         new_rules += new_predicate + \
             " => NP/NP {\\x. '@Concat'('" + s + "', x)}\n"
-        new_rules += new_predicate + \
-            " => NP\\NP {\\x. '@Concat'('" + s + \
-            "', x)}\n"  # for prceeding nouns
         RAW_LEXICON += new_rules
         return [new_predicate]
 
@@ -171,8 +168,8 @@ def remove_punctuation(sentence):
 
 def is_number(token):
     """ Returns True is string is a number. """
-    # Did it for handling not only integers, but float numbers too.
-    # The problem is nltk parser doesn't allow '.' to be present in string
+    # Did it for handling not only integers, but float numbers as well.
+    # The problem is that nltk parser doesn't allow '.' to be present in string
     try:
         float(token)
         return True
@@ -208,8 +205,8 @@ def quote_word_lexicon(sentence):
 
 def example():
     # These work
-    sentence = "insert every 2 elements in a string"
-    # sentence = remove_punctuation(sentence)
+    sentence = "skip the extra newline while printing lines read from a file"
+    sentence = remove_punctuation(sentence)
     ts = tokenize(sentence.split(' '))
     # ts = tokenize("find the list".split(' '))
 
