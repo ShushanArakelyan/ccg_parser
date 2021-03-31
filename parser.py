@@ -3,6 +3,7 @@ from spacy.tokenizer import Tokenizer
 
 import copy
 import logging
+import string
 from parser_dict import STRING2PREDICATE, WORD2NUMBER, RAW_LEXICON
 from nltk.ccg import chart, lexicon
 
@@ -11,7 +12,8 @@ BEAM_WIDTH = 100
 MAX_PHRASE_LEN = 4
 
 COMMA_INDEX = {',': 0, '-LRB-': 1, '-RRB-': 2, '.': 3, '-': 4}
-SPECIAL_CHARS = {' ': '_', '(': '[LEFT_BRACKET]', ')': '[RIGHT_BRACKET]', '.': '[DOT]', ',': '[COMMA]', '-': '[HYPHEN]', '\'': '[APOSTROPHE]'}
+SPECIAL_CHARS = {' ': '_', '(': '[LEFT_BRACKET]', ')': '[RIGHT_BRACKET]',
+                 '.': '[DOT]', ',': '[COMMA]', '-': '[HYPHEN]', '\'': '[APOSTROPHE]'}
 REVERSE_SPECIAL_CHARS = {v.lower(): k for k, v in SPECIAL_CHARS.items()}
 REVERSE_SPECIAL_CHARS.update({v: k for k, v in SPECIAL_CHARS.items()})
 
@@ -51,6 +53,7 @@ tokenizer = Tokenizer(nlp.vocab)
 logger = logging.getLogger(__name__)
 
 ### Helper functions for Preprocessing Explanations ###
+
 
 def fill_whitespace_in_quote(sentence):
     """input: a string containing multiple sentences;
@@ -105,8 +108,8 @@ def string_to_predicate(s):
     elif s in STRING2PREDICATE:
         return STRING2PREDICATE[s]
     elif s.isdigit():
-        # return ["'" + s + "'"]
-        return ["$UNK"]
+        return ["'" + s + "'"]
+        # return ["$UNK"]
     elif s in WORD2NUMBER:
         # return ["$UNK"]
         return ["'" + WORD2NUMBER[s] + "'"]
@@ -118,7 +121,8 @@ def string_to_predicate(s):
         global RAW_LEXICON
         new_predicate = "$" + s
         new_rules = new_predicate + "  => NP {'" + s + "'}\n"
-        new_rules += new_predicate + " => NP/NP {\\x. '@Concat'('" + s  +"', x)}\n"
+        new_rules += new_predicate + \
+            " => NP/NP {\\x. '@Concat'('" + s + "', x)}\n"
         RAW_LEXICON += new_rules
         return [new_predicate]
 
@@ -155,6 +159,23 @@ def get_entry(word_name, category, semantics):
 
 
 ### Helper functions for Parsing ###
+def remove_punctuation(sentence):
+    # TODO:
+    # 1. handle dictionary/list, non-consuming
+    # 2. python 2.6 -> python 26
+    return sentence.translate(str.maketrans('', '', string.punctuation))
+
+
+def is_number(token):
+    """ Returns True is string is a number. """
+    # Did it for handling not only integers, but float numbers as well.
+    # The problem is that nltk parser doesn't allow '.' to be present in string
+    try:
+        float(token)
+        return True
+    except ValueError:
+        return False
+
 
 def quote_word_lexicon(sentence):
     """Special Handle for quoted words"""
@@ -166,21 +187,27 @@ def quote_word_lexicon(sentence):
     ret = ""
     for token in sentence:
         if is_quote_word(token):
-            ret += get_entry(token, 'NP', token)
-            ret += get_entry(token, 'N', token)
-            ret += get_entry(token, 'NP', "'@In'({},'all')".format(token))
+            # ret += get_entry(token, 'NP', token)
+            # ret += get_entry(token, 'N', token)
+            # ret += get_entry(token, 'NP', "'@In'({},'all')".format(token))
             if token[1:-1].isdigit():
-                ret += get_entry(token, 'NP/NP', "\\x.'@Num'({},x)".format(token))
-                ret += get_entry(token, 'N/N', "\\x.'@Num'({},x)".format(token))
-                ret += get_entry(token, 'PP/PP/NP/NP', "\\x y F.'@WordCount'('@Num'({},x),y,F)".format(token))
-                ret += get_entry(token, 'PP/PP/N/N', "\\x y F.'@WordCount'('@Num'({},x),y,F)".format(token))
+                ret += get_entry(token, 'NP', token)
+                ret += get_entry(token, 'N', token)
+                ret += get_entry(token, 'NP/NP',
+                                 "\\x.'@Num'({},x)".format(token))
+                ret += get_entry(token, 'N/N',
+                                 "\\x.'@Num'({},x)".format(token))
+                # ret += get_entry(token, 'PP/PP/NP/NP', "\\x y F.'@WordCount'('@Num'({},x),y,F)".format(token))
+                # ret += get_entry(token, 'PP/PP/N/N', "\\x y F.'@WordCount'('@Num'({},x),y,F)".format(token))
 
     return ret
 
 
 def example():
     # These work
-    ts = tokenize("split string every nth character".split(' '))
+    sentence = "skip the extra newline while printing lines read from a file"
+    sentence = remove_punctuation(sentence)
+    ts = tokenize(sentence.split(' '))
     # ts = tokenize("find the list".split(' '))
 
     # These do not work
@@ -196,17 +223,21 @@ def example():
     # Example: "Find intersection of two nested lists?"
     # 1) *.lowercase()
     # 1a) remove question words and question marks at the end
-    #TODO: 2) bring verbs to their canonical form: finding -> find
-    #"find the index of an item in a list" -> @Find(what = "the index of an item"[NP], where="in a list"[PP?])
-    #"find intersection of two nested lists" -> @Find(what = "intersection of two nested lists"[NP])
+    # TODO: 2) bring verbs to their canonical form: finding -> find
+    # "find the index of an item in a list" -> @Find(what = "the index of an item"[NP], where="in a list"[PP?])
+    # "find intersection of two nested lists" -> @Find(what = "intersection of two nested lists"[NP])
 
     # ts = tokenize("find the index of an item in a list".split(' '))
     # ts = tokenize("find intersection of nested lists".split(' '))
+    # ts = tokenize("round 123 to 100 instead of 100.0.split(' ')) # nltk.sem.logic.LogicalExpressionException: Unexpected token: '.' 100.0'
     # ts = tokenize("find current dir and files dir".split(' ')) # AssertionError: `'@And'(\x.'@Concat'('files',x),\x.'@Concat'('dir',x))` must be a lambda expression
+    # ts = tokenize("split and parse a string in Python?"..split(' ')) # AssertionError: `'@And'(\x y.'@Split'(x,y),\y x.'@Parse'('@Desc'(x),y))` must be a lambda expression
     # ts = tokenize("find all files in a dir with extension .txt".split(' ')) # nltk.sem.logic.LogicalExpressionException: Unexpected token: '.'. in '.txt'
     # ts = tokenize("use glob to find files recursively".split(' '))
     # ts = tokenize("find the duplicates in a list and create another list with them".split(' '))
-    lex = lexicon.fromstring(RAW_LEXICON, include_semantics=True)
+
+    beam_lexicon = copy.deepcopy(RAW_LEXICON) + quote_word_lexicon(ts[0])
+    lex = lexicon.fromstring(beam_lexicon, include_semantics=True)
     parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
     for tsi in ts:
         print(tsi)
@@ -215,6 +246,7 @@ def example():
             # just print the first one
             break
         break
+
 
 if __name__ == "__main__":
     example()
