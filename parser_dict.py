@@ -18,8 +18,8 @@ STRING2PREDICATE = {
     "int": ["$Int"],
     "integer": ["$Int"],
     "integers": ["$Int"],
-    "array": ["$Array"],
-    "arrays": ["$Array"],
+    "array": ["$List"],
+    "arrays": ["$List"],
     "list": ["$List"],
     "lists": ["$List"],
     "tuple": ["$Tuple"],
@@ -66,7 +66,6 @@ STRING2PREDICATE = {
 
     # conjunctions
     "and": ["$And"],
-    "by": ["$By"],
     "that": ["$And"],
     "then": ["$And"],
     # "both": ["$And"],
@@ -162,12 +161,13 @@ STRING2PREDICATE = {
     "greater than": ["$GT"],
     "equal": ["$EQ"],
     "equals": ["$EQ"],
-    "only": ["$Only"],
+    # "only": ["$Only"],
     # "all": ["$All", "$And"],
     # "every": ["$All"],
     "none": ["$None", "$Not"],
 
     # Prepositions
+    "by": ["$By"],
     # "as": ["$as"],
 }
 
@@ -226,12 +226,6 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Null => NP {'Null'}
     $Number => N {'Number'}
     $Number => NP {'Number'}
-    $Only => N {'Only'}
-    $Only => NP {'Only'}
-    $Array => N {'Array'}
-    $Array => NP {'Array'}
-    
-    $List => NP/NP {\\x. '@Concat'(List, x)}
 
     $And => var\\.,var/.,var {\\y x.'@And'(x,y)}
     $Or => var\\.,var/.,var {\\y x.'@Or'(x,y)}
@@ -251,6 +245,7 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Split => S/NP {\\x. '@Split'(x)}
     $Split => (S/NP)/NP {\\y x. '@Split'('@Desc'(x), y)}
     $Split => (S\\NP)/NP {\\y x. '@Split'('@Desc'(x), y)}
+    $Round => S/NP {\\x. '@Round'(x)}
     $Round => (S/NP)/NP {\\y x. '@Round'('@Desc'(x), y)}
     $Convert => (S/NP)/NP {\\y x. '@Convert'('@Desc'(x), y)}
     $Add => NP {'Add'}
