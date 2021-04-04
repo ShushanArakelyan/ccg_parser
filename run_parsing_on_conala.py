@@ -34,8 +34,6 @@ def parse_conala(args):
         else:
             data_gen = tqdm(enumerate(conala['intent']))
         for i, q in data_gen:
-            if i != 0 and i % 1000 == 0:
-                print("Processed {}, of which successfully {}".format(i, parsed_q_count))
             all_q_count += 1
             if not q:
                 q = conala['intent'][i]
@@ -44,7 +42,7 @@ def parse_conala(args):
                 parse_tree = parse_sentence(q, time_limit=time_limit)
                 print('*' * 120)
                 print('{}: {}'.format(i, q))
-                chart.printCCGDerivation(parse_tree)
+                #chart.printCCGDerivation(parse_tree)
                 print('\n\n\n')
                 parsed_q_count += 1
                 sys.stdout.flush()
@@ -58,7 +56,7 @@ def parse_conala(args):
                 ex_out.write("{} {} \n".format(q, i))
                 ex_out.write(str(ex))
                 ex_out.flush()
-    print("Success rate: {}/{}".format(parsed_q_count, all_q_count))
+            data_gen.set_description("success rate: {:.2f}".format(float(parsed_q_count)/all_q_count), refresh=True)
     sys.stdout.close()
 
 
