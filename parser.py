@@ -260,11 +260,15 @@ def parse_sentence(sentence, time_limit=10):
     def timeout(_, __):
         raise TimeoutError("parsing sentence {} takes too long".format(sentence))
 
-    if time_limit > 0:
+    try:
         signal.signal(signal.SIGALRM, handler=timeout)
         signal.alarm(time_limit)
-    parse_tree = next(parser.parse(ts))
-    if time_limit > 0:
+        parse_tree = next(parser.parse(ts))
+    except:
+        # this should be called to avoid throwing one more exception
+        signal.alarm(0)
+        raise
+    else:
         signal.alarm(0)
     return parse_tree
 
@@ -299,6 +303,10 @@ def example():
 
 
 if __name__ == "__main__":
+    # First time running will require downloading following nltk datasets
+    # nltk.download('wordnet')
+    # nltk.download('averaged_perceptron_tagger')
+
     import time
 
     s = time.time()
