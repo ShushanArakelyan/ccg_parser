@@ -55,8 +55,8 @@ def parse_conala(args):
                 t_out.write("{} {} \n".format(q, i))
                 t_out.flush()
             except Exception as ex:
-                print(ex)
                 ex_out.write("{} {} \n".format(q, i))
+                ex_out.write(str(ex))
                 ex_out.flush()
     print("Success rate: {}/{}".format(parsed_q_count, all_q_count))
     sys.stdout.close()
