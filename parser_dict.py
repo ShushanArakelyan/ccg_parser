@@ -89,27 +89,44 @@ STRING2PREDICATE = {
     "locate": ["$Find"],
     "locating": ["$Find"],
     "calcuate": ["$Find"],
+    "search": ["$Find"],
     # "find if": ["$Check"]
     # "find out": ["$Return"]?
     # kind of the same as "get"? return smth [from smth/smwh]
     "return": ["$Return"],
     # merge smth-s into smth; merge smth-s; merge smth with smth; merge in NP[e.g. merge sort]
     "merge": ["$Merge"],
+    "merging": ["$Merge"],
     "join": ["$Merge"],
+    "joining": ["$Merge"],
+    "coalesce": ["$Merge"],
     "concat": ["$Concatenate"],
     "concatenate": ["$Concatenate"],
     "concatenating": ["$Concatenate"],
     "concatenation": ["$Concatenate"],
     "combine": ["$Concatenate"],
+    "zip": ["$Concatenate"],
+    "slice": ["$Split"],
+    "slicing": ["$Split"],
     "split": ["$Split"],
     "splitting": ["$Split"],
     "round": ["$Round"],
     "rounding": ["$Round"],
+    "reset": ["$Convert"],
+    "rename": ["$Convert"],
     "convert": ["$Convert"],
     "converting": ["$Convert"],
+    "translate": ["$Convert"],
+    "turn": ["$Convert"],
+    "turning": ["$Convert"],
+    "divide": ["$Convert"],
+    "transform": ["$Convert"],
+    "transforming": ["$Convert"],
     "add": ["$Add"],
     "addition": ["$Add"],
     "adding": ["$Add"],
+    "format": ["$Add"],
+    "formating": ["$Add"],
     "insert": ["$Add"],
     "inserting": ["$Add"],
     "remove": ["$Remove"],
@@ -122,18 +139,25 @@ STRING2PREDICATE = {
     "pad": ["$Pad"],
     "map": ["$Map", "$Dict"],
     "filter": ["$Map"],
+    "unzip": ["$Map"],
+    "unpack": ["$Map"],
+    "unpacking": ["$Map"],
     "create": ["$Create"],
+    "creating": ["$Create"],
     "created": ["$Create"],
     "generate": ["$Create"],
     "initialize": ["$Create"],
     "init": ["$Create"],
     "declare": ["$Create"],
+    "define": ["$Create"],
     "copy": ["$Create"],
     "copying": ["$Create"],
     "make": ["$Create"],
     "load": ["$Load"],
     "read": ["$Load"],
     "reading": ["$Load"],
+    "pass": ["$Load"],
+    "passing": ["$Load"],
     "get": ["$Load"],
     "getting": ["$Load"],
     "detect": ["$Load"],
@@ -145,13 +169,23 @@ STRING2PREDICATE = {
     "downloading": ["$Load"],
     "display": ["$Load"],
     "displaying": ["$Load"],
+    "access": ["$Load"],
+    "accessing": ["$Load"],
     "use": ["$Load"],
     "control": ["$Load"],
+    "count": ["$Load"],
+    "choose": ["$Load"],
+    "extract": ["$Load"],
+    "extracting": ["$Load"],
+    "count": ["$Load"],
+    "counting": ["$Load"],
     "save": ["$Save"],
     "saved": ["$Save"],
     "saving": ["$Save"],
     "set": ["$Set", "$Save"],
+    "setting": ["$Save"],
     "write": ["$Save"],
+    "writing": ["$Save"],
     # "keep": ["$Save"],
     "print": ["$Print"],
     "printing": ["$Print"],
@@ -161,8 +195,10 @@ STRING2PREDICATE = {
     "iterator": ["$Iterate"],
     "iterators": ["$Iterate"],
     "iterating": ["$Iterate"],
+    "loop": ["$Iterate"],
     # "it": ["$Iterate"],
     "append": ["$Append"],
+    "prepend": ["$Append"],
     "appending": ["$Append"],
     "break": ["$Break"],
     "breaks": ["$Break"],
@@ -175,11 +211,16 @@ STRING2PREDICATE = {
     "comp": ["$Compare"],
     "comparing": ["$Compare"],
     "compare": ["$Compare"],
+    "normalizing": ["$Parse"],
+    "normalize": ["$Parse"],
+    "flatten": ["$Parse"],
     "parse": ["$Parse"],
     "parsing": ["$Parse"],
     "assign": ["$Assign"],
     "assignment": ["$Assign"],
     "assigning": ["$Assign"],
+    "order": ["$Sort"],
+    "ordered": ["$Sort"],
     "sort": ["$Sort"],
     # "sorted": ["$Sort"],
     "sorting": ["$Sort"],
@@ -192,6 +233,8 @@ STRING2PREDICATE = {
     "matchable": ["$Match"],
     "matches": ["$Match"],
     "matching": ["$Match"],
+    "move": ["$Replace"],
+    "change": ["$Replace"],
     "replace": ["$Replace"],
     "replacing": ["$Replace"],
     "replacement": ["$Replace"],
@@ -213,7 +256,16 @@ STRING2PREDICATE = {
 
     # Prepositions
     "by": ["$By"],
-    # "as": ["$as"],
+    "in": ["$In"],
+    "into": ["$Into"],
+    "to": ["$To"],
+    "on": ["$On"],
+    "for": ["$For"],
+    "from": ["$From"],
+    "with": ["$With"],
+    "as": ["$As"],
+    "through": ["$Through"],
+    "over": ["$Over"],
 }
 
 WORD_NUMBERS = ['zero', 'one', 'two', 'three', 'four',
@@ -221,14 +273,14 @@ WORD_NUMBERS = ['zero', 'one', 'two', 'three', 'four',
 WORD2NUMBER = {elem: str(i) for i, elem in enumerate(WORD_NUMBERS)}
 
 
-RAW_LEXICON = ''' :- S, NP, N, VP
+RAW_LEXICON = ''' :- S, NP, N, VP, PP
     Det :: NP/N
     Pro :: NP
     Modal :: S\\NP/VP
 
     TV :: VP/NP
     DTV :: TV/NP
-    PP :: (NP\\NP)/NP
+    # PP :: (NP\\NP)/NP
 
     $The => N/N {\\x.x}
     $The => NP/NP {\\x.x}
@@ -274,10 +326,23 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Set => N {'Set'}
     $Set => NP {'Set'}
 
+    $In => PP/NP {\\x.'@In'(x)}
+    $Into => PP/NP {\\x.'@Into'(x)}
+    $Into => (PP/NP)/NP {\\x y.'@Into'(x, y)}
+    $By => PP/NP {\\x.'@By'(x)}
+    $By => (PP/NP)/NP {\\x y.'@By'(x, y)}
+    $By => (PP\\NP)/NP {\\x y.'@By'(x, y)}
+    $By => PP/S {\\x.'@By'(x)}
+    $With => PP/NP {\\x.'@With'(x)}
+    $For => PP/NP {\\x.'@For'(x)}
+    $From => PP/NP {\\x.'@From'(x)}
+    $To => PP/NP {\\x. '@To'(x)}
+    $To => (PP/NP)/NP {\\x y.'@To'(x, y)}
+    $Through => PP/NP {\\x. '@Through'(x)}
+    $On => PP/NP {\\x. '@On'(x)}
+
     $And => var\\.,var/.,var {\\y x.'@And'(x,y)}
     $Or => var\\.,var/.,var {\\y x.'@Or'(x,y)}
-    $By => NP/NP {\\x.'@By'(x)}
-    # $By => var\\.,var/.,var {\\y x.'@By'(x,y)}
     $Not => S/NP {\\x. '@Not'(x)} # is used in and a lot
     $Not => NP/NP {\\x. '@Not'(x)}
     $Exist => NP/NP {\\x. '@Exist'(x)}
@@ -285,83 +350,150 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Find => S/NP {\\x.'@Find'(x)}
     $Find => (S\\NP)/NP {\\y x.'@Find'('@Desc'(x), y)}
     $Find => (S/NP)/NP {\\y x.'@Find'('@Desc'(x), y)}
+    $Find => (S/NP)/PP {\\y x.'@Find'('@Desc'(x), y)}
+    $Find => (S/NP)/PP/NP {\\y x z. '@Find'('@Desc'(y), z, x)}
     $Return => S/NP {\\x.'@Return'(x)}
     $Return => (S/NP)/NP {\\y x.'@Return'('@Desc'(x), y)}
     $Return => (S/NP)/NP/NP {\\y x z.'@Return'('@Desc'(x), y, z)}
-    $Transform => (S/NP)/NP {\\x y.'@Transform'(x, y)}
-    $Merge => S/NP {\\x. '@Merge'(x)}
+    $Return => (S/NP)/PP/NP {\\y x z.'@Return'('@Desc'(x), y, z)}
+    $Transform => (S/NP)/NP {\\x y.'@Transform'(x, y)}.
     $Merge => NP {'Merge'}
+    $Merge => S/NP {\\x. '@Merge'(x)}
     $Merge => (S\\NP)/NP {\\y x. '@Merge'('@Desc'(x), y)}
+    $Merge => (S/NP)/NP {\\y x. '@Merge'('@Desc'(x), y)}
+    $Merge => (S/NP)/PP {\\y x. '@Merge'('@Desc'(x), y)}
+    $Merge => (S/NP)/NP/NP {\\y x z. '@Merge'('@Desc'(y), z, x)}
+    $Merge => (S/NP)/PP/NP {\\y x z. '@Merge'('@Desc'(y), z, x)}'
+    $Merge => (S/PP)/PP/NP {\\y x z. '@Merge'('@Desc'(y), z, x)}'
     $Sort => S/NP {\\x. '@Sort'(x)}
+    $Sort => S/PP {\\x. '@Sort'(x)}
     $Sort => (S/NP)/NP {\\y x. '@Sort'('@Desc'(x), y)}
+    $Sort => (S/NP)/PP {\\y x. '@Sort'('@Desc'(x), y)}
     $Sort => (S\\NP)/NP {\\y x. '@Sort'('@Desc'(x), y)}
     $Sort => (S/NP)/NP/NP {\\y x z. '@Sort'('@Desc'(x), y)}
+    $Sort => (S/NP)/PP/NP {\\y x z. '@Sort'('@Desc'(y), x, z)}
+    $Sort => (S/PP)/PP/NP {\\y x z. '@Sort'('@Desc'(y), x, z)}
+    $Sort => (S/PP)/PP/NP/NP {\\y x z k. '@Sort'('@Desc'(y), x, z, k)}'
+    $Sort => (S/PP)/NP/NP/NP {\\y x z k. '@Sort'('@Desc'(y), x, z, k)}'
     $Concatenate => S/NP {\\x. '@Concatenate'(x)} # can be also Merge
     $Concatenate => S/NP/NP {\\x y. '@Concatenate'(x, y)} # can be also Merge
+    $Concatenate => S/NP/PP {\\x y. '@Concatenate'(x, y)} # can be also Merge
+    $Concatenate => (S/NP)/PP/NP {\\y x z. '@Concatenate'('@Desc'(y), z, x)}
+    $Concatenate => (S/PP)/PP/NP {\\y x z. '@Concatenate'('@Desc'(y), z, x)}
     $Split => S/NP {\\x. '@Split'(x)}
     $Split => (S/NP)/NP {\\y x. '@Split'('@Desc'(x), y)}
     $Split => (S\\NP)/NP {\\y x. '@Split'('@Desc'(x), y)}
+    $Split => (S/NP)/PP {\\y x. '@Split'('@Desc'(x), y)}
+    $Split => (S/NP)/PP/NP {\\y x z. '@Split'('@Desc'(y), z, x)}
+    $Split => (S/PP)/PP/NP {\\y x z. '@Split'('@Desc'(y), z, x)}
     $Round => S/NP {\\x. '@Round'(x)}
     $Round => (S/NP)/NP {\\y x. '@Round'('@Desc'(x), y)}
+    $Round => (S/NP)/PP {\\y x. '@Round'('@Desc'(x), y)}
     $Convert => (S/NP)/NP {\\y x. '@Convert'('@Desc'(x), y)}
     $Convert => (S/NP)/NP/NP {\\y x z. '@Convert'('@Desc'(x), y, z)}
+    $Convert => (S/NP)/PP {\\y x. '@Convert'('@Desc'(x), y)}
+    $Convert => (S/NP)/PP/NP {\\y x z. '@Convert'('@Desc'(y), z, x)}
+    $Convert => (S/PP)/PP/NP {\\y x z. '@Convert'('@Desc'(y), z, x)}
+    $Convert => (S/PP)/PP/NP/NP {\\y x z k. '@Convert'('@Desc'(y), x, z, k)}'
+    $Convert => (S/PP)/PP/PP/NP {\\y x z k. '@Convert'('@Desc'(y), x, z, k)}'
     $Add => NP {'Add'}
     $Add => S/NP {\\x. '@Add'(x)}
     $Add => (S/NP)/NP {\\y x. '@Add'('@Desc'(x), y)}
+    $Add => (S/NP)/PP {\\y x. '@Add'('@Desc'(x), y)}
     $Add => (S\\NP)/NP {\\y x. '@Add'('@Desc'(x), y)}
     $Add => (S\\NP)/NP/NP {\\y x z. '@Add'('@Desc'(x), y, z)}
+    $Add => (S/NP)/NP/NP {\\y x z. '@Add'('@Desc'(x), y, z)}
+    $Add => (S/NP)/PP/NP {\\y x z. '@Add'('@Desc'(y), z, x)}
+    $Add => (S/PP)/PP/NP/NP {\\y x z k. '@Add'('@Desc'(y), x, z, k)}'
+    $Add => (S/PP)/NP/PP/NP {\\y x z k. '@Add'('@Desc'(y), z, x, k)}'
     $Remove => S/NP {\\x. '@Remove'(x)}
     $Remove => (S/NP)/NP {\\y x. '@Remove'('@Desc'(x), y)}
+    $Remove => (S/NP)/PP {\\y x. '@Remove'('@Desc'(x), y)}
     $Remove => (S\\NP)/NP {\\y x. '@Remove'('@Desc'(x), y)}
     $Remove => (S/NP)/NP/NP {\\y x z. '@Remove'('@Desc'(x), y, z)}
+    $Remove => (S/NP)/PP/NP {\\y x z. '@Remove'('@Desc'(y), z, x)}
     $Map => (S/NP)/NP {\\y x. '@Map'('@Desc'(x), y)}
+    $Map => (S/NP)/PP {\\y x. '@Map'('@Desc'(x), y)}
+    $Map => (S/NP)/PP/NP {\\y x z. '@Map'('@Desc'(y), z, x)}
+    $Map => (S/PP)/PP/NP {\\y x z. '@Map'('@Desc'(y), z, x)}
     $Create => NP/NP {\\x.'@Create'(x)}
     $Create => NP\\NP {\\x.'@Create'(x)}
     $Create => S/NP {\\x. '@Create'(x)}
     $Create => (S/NP)/NP {\\y x. '@Create'('@Desc'(x), y)}
+    $Create => (S/NP)/PP {\\y x. '@Create'('@Desc'(x), y)}
     $Create => (S\\NP)/NP {\\y x. '@Create'('@Desc'(x), y)}
+    $Create => (S/NP)/PP/NP {\\y x z. '@Create'('@Desc'(y), z, x)}
+    $Create => (S/PP)/PP/NP {\\y x z. '@Create'('@Desc'(y), z, x)}
+    $Create => (S/PP)/PP/PP/NP {\\y x z k. '@Create'('@Desc'(y), x, z, k)}'
     $Load => NP\\NP {\\x.'@Load'(x)}
     $Load => S/NP {\\x. '@Load'(x)}
     $Load => S\\NP {\\x. '@Load'(x)} # for nouns that come before
     $Load => (S/NP)/NP {\\y x. '@Load'('@Desc'(x), y)}
+    $Load => (S/NP)/PP {\\y x. '@Load'('@Desc'(x), y)}
     $Load => (S/NP)/NP/NP {\\y x z. '@Load'('@Desc'(x), y, z)}
+    $Load => (S/NP)/PP/NP  {\\y x z. '@Load'('@Desc'(y), z, x)}
+    $Load => (S/PP)/PP/NP  {\\y x z. '@Load'('@Desc'(y), z, x)}
+    $Load => (S/PP)/NP/PP/NP {\\y x z k. '@Load'('@Desc'(y), z, x, k)}'
+    $Load => (S/PP)/PP/NP/NP {\\y x z k. '@Load'('@Desc'(y), z, x, k)}'
+    $Load => (S/PP)/NP/PP/PP/NP {\\y x z k l. '@Load'('@Desc'(y), z, x, k, l)}'
     $Save => NP {'Save'}
     $Save => S/NP {\\x. '@Save'(x)}
     $Save => (S/NP)/NP {\\y x. '@Save'('@Desc'(x), y)}
+    $Save => (S/NP)/PP {\\y x. '@Save'('@Desc'(x), y)}
+    $Save => (S/NP)/NP/NP {\\y x z. '@Save'('@Desc'(y), z, x)}
+    $Save => (S/NP)/PP/NP {\\y x z. '@Save'('@Desc'(y), z, x)}
     $Print => NP {'Print'}
     $Print => S/NP {\\x. '@Print'(x)}
     $Print => S\\NP {\\x. '@Print'(x)}
     $Print => (S/NP)/NP {\\y x. '@Print'('@Desc'(x), y)}
+    $Print => (S/NP)/PP {\\y x. '@Print'('@Desc'(x), y)}
     $Iterate => NP {'Iterator'}
     $Iterate => S/NP {\\x. '@Iterate'(x)}
     $Iterate => (S/NP)/NP {\\y x. '@Iterate'('@Desc'(x), y)}
+    $Iterate => (S/PP)/PP {\\y x. '@Iterate'('@Desc'(y), x)}
+    $Iterate => (S/NP)/PP {\\y x. '@Iterate'('@Desc'(x), y)}
     $Append => NP {'Append'}
     $Append => S/NP {\\x. '@Append'(x)}
     $Append => (S/NP)/NP {\\y x. '@Append'('@Desc'(x), y)}
+    $Append => (S/NP)/PP/NP {\\y x z. '@Append'('@Desc'(y), z, x)}
     $Break => NP {'Break'}
     $Continue => S/NP {\\x. '@Continue'(x)}
+    $Continue => S/PP {\\x. '@Continue'(x)}
     $Compare => NP {'Check'} #if compare is not used as NP, will use this
     $Compare => S/NP {\\x. '@Compare'(x)}
+    $Compare => S/PP {\\x. '@Compare'(x)}
     $Compare => (S/NP)/NP {\\y x. '@Compare'('@Desc'(x), y)}
+    $Compare => (S/NP)/PP {\\y x. '@Compare'('@Desc'(x), y)}
     $Compare => (S/NP)/NP/NP {\\y x z. '@Compare'('@Desc'(x), y, z)}
+    $Compare => (S/NP)/PP/NP {\\y x z. '@Compare'('@Desc'(y), z, x)}
     $Parse => S/NP {\\x. '@Parse'(x)}
     $Parse => S\\NP {\\x. '@Parse'(x)}
     $Parse => (S/NP)/NP {\\y x. '@Parse'('@Desc'(x), y)}
+    $Parse => (S/NP)/PP {\\y x. '@Parse'('@Desc'(x), y)}
     $Parse => (S/NP)/NP/NP {\\y x z. '@Parse'('@Desc'(x), y, z)}
+    $Parse => (S/NP)/PP/NP {\\y x z. '@Parse'('@Desc'(y), z, x)}
+    $Parse => (S/PP)/PP/PP {\\y x z. '@Parse'('@Desc'(y), z, x)}
     $Assign => (S/NP)/NP {\\y x. '@Assign'('@Desc'(x), y)}
     $Assign => (S\\NP)/NP {\\y x. '@Assign'('@Desc'(x), y)}
+    $Assign => (S/NP)/PP {\\y x. '@Assign'('@Desc'(x), y)}
     $Replace => S/NP {\\x. '@Replace'(x)}
     $Replace => S\\NP {\\x. '@Replace'(x)}
     $Replace => (S/NP)/NP {\\y x. '@Replace'('@Desc'(x), y)}
+    $Replace => (S/NP)/PP {\\y x. '@Replace'('@Desc'(x), y)}
     $Replace => (S\\NP)/NP {\\y x. '@Replace'('@Desc'(x), y)}
+    $Replace => (S/PP)/PP/NP {\\y x z. '@Replace'('@Desc'(y), z, x)}
+    $Replace => (S/NP)/PP/NP {\\y x z. '@Replace'('@Desc'(y), z, x)}
+    $Replace => (S/PP)/PP/NP/NP {\\y x z k. '@Replace'('@Desc'(y), z, x, k)}'
     $Contain => NP/NP {\\x. '@Contain'(x)} # as it is used with other verbs
     $Contain => S\\NP {\\x. '@Contain'(x)}
     $Contain => (S\\NP)\\NP {\\y x. '@Contain'('@Desc'(x), y)}
+    $Contain => (S\\NP)\\PP {\\y x. '@Contain'('@Desc'(x), y)}
     $Match => NP {'Match'}
     $Match => NP/NP {\\x. '@Match'(x)}
     $Match => S/NP {\\x. '@Match'(x)}
     $Match => S\\NP {\\x. '@Match'(x)}
     $Match => (S/NP)/NP {\\y x. '@Match'('@Desc'(x), y)}
+    $Match => (S/NP)/PP {\\y x. '@Match'('@Desc'(x), y)}
     $Match => (S\\NP)/NP {\\y x. '@Match'('@Desc'(x), y)}
 
 '''

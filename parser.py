@@ -205,7 +205,7 @@ def quote_word_lexicon(sentence):
 
 def example():
     # These work
-    sentence = "get rid of global const variables in python"
+    sentence = "to a list of int"
     sentence = remove_punctuation(sentence)
     ts = tokenize(sentence.split(' '))
     # ts = tokenize("find the list".split(' '))
