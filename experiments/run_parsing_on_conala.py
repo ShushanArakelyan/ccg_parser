@@ -3,7 +3,6 @@ import os.path
 import sys
 
 import pandas as pd
-from nltk.ccg import chart
 from tqdm import tqdm
 
 from parser import parse_sentence
@@ -35,8 +34,6 @@ def parse_conala(args):
             data_gen = tqdm(enumerate(conala['intent']))
         for i, q in data_gen:
             all_q_count += 1
-            if not q:
-                q = conala['intent'][i]
             q = q.lower()
             try:
                 parse_tree = parse_sentence(q, time_limit=time_limit)
