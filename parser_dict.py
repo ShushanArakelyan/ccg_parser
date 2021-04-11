@@ -98,6 +98,7 @@ STRING2PREDICATE = {
     # "find out": ["$Return"]?
     # kind of the same as "get"? return smth [from smth/smwh]
     "return": ["$Return"],
+    "fallback": ["$Return"],
     # merge smth-s into smth; merge smth-s; merge smth with smth; merge in NP[e.g. merge sort]
     "merge": ["$Merge"],
     "merging": ["$Merge"],
@@ -111,6 +112,7 @@ STRING2PREDICATE = {
     "concatenating": ["$Concatenate"],
     "concatenation": ["$Concatenate"],
     "combine": ["$Concatenate"],
+    "combinate": ["$Concatenate"],
     "zip": ["$Concatenate"],
     "slice": ["$Split"],
     "slicing": ["$Split"],
@@ -118,6 +120,7 @@ STRING2PREDICATE = {
     "splitting": ["$Split"],
     "round": ["$Round"],
     "rounding": ["$Round"],
+    "limiting": ["$Round"],
     "reset": ["$Convert"],
     "rename": ["$Convert"],
     "convert": ["$Convert"],
@@ -134,10 +137,11 @@ STRING2PREDICATE = {
     "addition": ["$Add"],
     "adding": ["$Add"],
     "format": ["$Add"],
-    "formating": ["$Add"],
+    "formatting": ["$Add"],
     "insert": ["$Add"],
     "inserting": ["$Add"],
     "multiply": ["$Add"],
+    "multiplying": ["$Add"],
     "average": ["$Add"],
     "averaging": ["$Add"],
     "increase": ["$Add"],
@@ -156,6 +160,7 @@ STRING2PREDICATE = {
     "excluding": ["$Remove"],
     "terminate": ["$Remove"],
     "strip": ["$Remove"],
+    "ignore": ["$Remove"],
     "pad": ["$Pad"],
     "map": ["$Map", "$Dict"],
     "unzip": ["$Map"],
@@ -181,6 +186,7 @@ STRING2PREDICATE = {
     "passing": ["$Load"],
     "get": ["$Load"],
     "getting": ["$Load"],
+    "apply": ["$Load"],
     "detect": ["$Load"],
     "select": ["$Load"],
     "selected": ["$Load"],
@@ -191,6 +197,12 @@ STRING2PREDICATE = {
     "display": ["$Load"],
     "displaying": ["$Load"],
     "call": ["$Load"],
+    "calling": ["$Load"],
+    "sample": ["$Load"],
+    "sampling": ["$Load"],
+    "resample": ["$Load"],
+    "plot": ["$Load"],
+    "plotting": ["$Load"],
     "access": ["$Load"],
     "accessing": ["$Load"],
     "use": ["$Load"],
@@ -211,6 +223,8 @@ STRING2PREDICATE = {
     "click": ["$Load"],
     "sum": ["$Load"],
     "subtract": ["$Load"],
+    "exploding": ["$Load"],
+    "refer": ["$Load"],
     "use": ["$Load"],
     "using": ["$Load"],
     "compile": ["$Load"],
@@ -221,9 +235,18 @@ STRING2PREDICATE = {
     "retrieve": ["$Load"],
     "retrieving": ["$Load"],
     "listing": ["$Load"],
+    "capture": ["$Load"],
+    "capturing": ["$Load"],
     "obtain": ["$Load"],
     "pull": ["$Load"],
     "grab": ["$Load"],
+    "open": ["$Load"],
+    "send": ["$Load"],
+    "sending": ["$Load"],
+    "identify": ["$Load"],
+    "identifying": ["$Load"],
+    "go": ["$Load"],
+    "work": ["$Load"],
     "save": ["$Save"],
     "saved": ["$Save"],
     "saving": ["$Save"],
@@ -233,7 +256,7 @@ STRING2PREDICATE = {
     "writing": ["$Save"],
     "update": ["$Save"],
     "updating": ["$Save"],
-    # "keep": ["$Save"],
+    "keep": ["$Save"],
     "print": ["$Print"],
     "printing": ["$Print"],
     "show": ["$Print"],
@@ -248,6 +271,8 @@ STRING2PREDICATE = {
     "append": ["$Append"],
     "prepend": ["$Append"],
     "appending": ["$Append"],
+    "pad": ["$Append"],
+    "padding": ["$Append"],
     "break": ["$Break"],
     "breaks": ["$Break"],
     "continue": ["$Continue"], # no examples found for continue
@@ -268,7 +293,7 @@ STRING2PREDICATE = {
     "assign": ["$Assign"],
     "assignment": ["$Assign"],
     "assigning": ["$Assign"],
-    "indexing": ["$Assign"],
+    "indexing": ["$Assign", "$Index"],
     "reorder": ["$Sort"],
     "reordering": ["$Sort"],
     "order": ["$Sort"],
@@ -291,6 +316,8 @@ STRING2PREDICATE = {
     "replace": ["$Replace"],
     "replacing": ["$Replace"],
     "replacement": ["$Replace"],
+    "substitute": ["$Replace"],
+    "swap": ["$Replace"],
 
     # Conditions
     "exist": ["$Exist"],
@@ -395,11 +422,12 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $On => (PP/NP)/NP {\\x y.'@On'(x, y)}
     $For => PP/NP {\\x.'@For'(x)}
     $For => (PP/NP)/NP {\\x y.'@For'(x, y)}
-
-    $With => PP/NP {\\x.'@With'(x)}
-    $With => (PP/NP)/NP {\\x y.'@With'(x, y)}
     $From => PP/NP {\\x.'@From'(x)}
     $From => (PP/NP)/NP {\\x y.'@From'(x, y)}
+    $With => PP/NP {\\x.'@With'(x)}
+    $With => (PP/NP)/NP {\\x y.'@With'(x, y)}
+    $As => PP/NP {\\x. '@As'(x)}
+    $As => (PP/NP)/NP {\\x y.'@As'(x, y)}
     $Through => PP/NP {\\x. '@Through'(x)}
     $Over => PP/NP {\\x. '@Over'(x)}
 
@@ -421,6 +449,7 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Return => (S/NP)/NP {\\y x.'@Return'('@Desc'(x), y)}
     $Return => (S/NP)/NP/NP {\\y x z.'@Return'('@Desc'(x), y, z)}
     $Return => (S/NP)/PP/NP {\\y x z.'@Return'('@Desc'(x), y, z)}
+    $Return => (S/PP)/PP/PP {\\y x z.'@Return'('@Desc'(x), y, z)}
     $Return => (S/PP)/PP/NP/NP {\\y x z k. '@Return'('@Desc'(y), x, z, k)}'
     $Transform => (S/NP)/NP {\\x y.'@Transform'(x, y)}.
     $Merge => NP {'Merge'}
@@ -515,6 +544,7 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Load => S\\NP {\\x. '@Load'(x)} # for nouns that come before
     $Load => (S/NP)/NP {\\y x. '@Load'('@Desc'(x), y)}
     $Load => (S/NP)/PP {\\y x. '@Load'('@Desc'(x), y)}
+    $Load => (S/PP)/PP {\\y x. '@Load'('@Desc'(x), y)}
     $Load => (S\\NP)/PP {\\y x. '@Load'('@Desc'(x), y)}
     $Load => (S/NP)/NP/NP {\\y x z. '@Load'('@Desc'(x), y, z)}
     $Load => (S/NP)/PP/NP  {\\y x z. '@Load'('@Desc'(y), z, x)}
@@ -523,6 +553,7 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Load => (S/PP)/NP/PP/NP {\\y x z k. '@Load'('@Desc'(y), x, z, k)}'
     $Load => (S/PP)/NP/NP/NP {\\y x z k. '@Load'('@Desc'(y), x, z, k)}'
     $Load => (S/PP)/PP/NP/NP {\\y x z k. '@Load'('@Desc'(y), x, z, k)}'
+    $Load => (S/PP)/PP/PP/NP {\\y x z k. '@Load'('@Desc'(y), x, z, k)}'
     $Load => (S/PP)/NP/PP/PP/NP {\\y x z k l. '@Load'('@Desc'(y), z, x, k, l)}'
     $Load => (S/PP)/PP/PP/PP/NP {\\y x z k l. '@Load'('@Desc'(y), z, x, k, l)}'
     $Save => NP {'Save'}
@@ -538,12 +569,15 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Print => S\\NP {\\x. '@Print'(x)}
     $Print => (S/NP)/NP {\\y x. '@Print'('@Desc'(x), y)}
     $Print => (S/NP)/PP {\\y x. '@Print'('@Desc'(x), y)}
+    $Print => (S/PP)/PP/NP {\\y x z. '@Print'('@Desc'(y), z, x)}
+    $Print => (S/PP)/PP/PP/NP {\\y x z k. '@Print'('@Desc'(y), x, z, k)}'
     $Append => NP {'Append'}
     $Append => S/NP {\\x. '@Append'(x)}
     $Append => (S/NP)/NP {\\y x. '@Append'('@Desc'(x), y)}
     $Append => (S/NP)/PP {\\y x. '@Append'('@Desc'(x), y)}
     $Append => (S\\NP)/PP {\\y x. '@Append'('@Desc'(x), y)}
     $Append => (S/NP)/PP/NP {\\y x z. '@Append'('@Desc'(y), z, x)}
+    $Append => (S/PP)/PP/NP {\\y x z. '@Append'('@Desc'(y), z, x)}
     $Break => NP {'Break'}
     $Continue => S/NP {\\x. '@Continue'(x)}
     $Continue => S/PP {\\x. '@Continue'(x)}
@@ -561,7 +595,9 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Parse => (S/NP)/PP {\\y x. '@Parse'('@Desc'(x), y)}
     $Parse => (S/NP)/NP/NP {\\y x z. '@Parse'('@Desc'(x), y, z)}
     $Parse => (S/NP)/PP/NP {\\y x z. '@Parse'('@Desc'(y), z, x)}
+    $Parse => (S/PP)/PP/NP {\\y x z. '@Parse'('@Desc'(y), z, x)}
     $Parse => (S/PP)/PP/PP {\\y x z. '@Parse'('@Desc'(y), z, x)}
+    $Parse => (S\\NP)/PP/NP/PP {\\y x z k. '@Parse'('@Desc'(y), x, z, k)}'
     $Assign => (S/NP)/NP {\\y x. '@Assign'('@Desc'(x), y)}
     $Assign => (S\\NP)/NP {\\y x. '@Assign'('@Desc'(x), y)}
     $Assign => (S/NP)/PP {\\y x. '@Assign'('@Desc'(y), x)}

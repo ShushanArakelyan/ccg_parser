@@ -205,7 +205,7 @@ def quote_word_lexicon(sentence):
 
 def example():
     # These work
-    sentence = "get 1 list and remove index"
+    sentence = "iterating over a subset of a list of tuples"
     sentence = remove_punctuation(sentence)
     ts = tokenize(sentence.split(' '))
     # ts = tokenize("find the list".split(' '))
