@@ -142,9 +142,14 @@ def string_to_predicate(s, pos):
             if lemma_form in STRING2PREDICATE:
                 return STRING2PREDICATE[lemma_form], new_rules
         new_predicate = "$" + s
-        new_rules = new_predicate + "  => NP {'" + s + "'}\n"
+        # rules for noun phrases
+        new_rules = new_predicate + "  => N {'" + s + "'}\n"
+        new_rules += new_predicate + "  => NP {'" + s + "'}\n"
         new_rules += new_predicate + \
-                     " => NP/NP {\\x. '@Concat'('" + s + "', x)}\n"
+                     "  => NP/NP {\\x. '@Concat'('" + s + "', x)}\n"
+        new_rules += new_predicate + \
+                     " => S/S {\\F. F('@Desc'('" + s + "'))}\n"
+        # TODO add separate rules for verbs
         return [new_predicate], new_rules
 
 

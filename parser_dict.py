@@ -259,7 +259,6 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Exist => NP/NP {\\x. '@Exist'(x)}
 
     $Find => S/NP {\\x.'@Find'(x)}
-    $Find => (S\\NP)/NP {\\y x.'@Find'('@Desc'(x), y)}
     $Find => (S/NP)/NP {\\y x.'@Find'('@Desc'(x), y)}
     $Return => S/NP {\\x.'@Return'(x)}
     $Return => (S/NP)/NP {\\y x.'@Return'('@Desc'(x), y)}
@@ -267,16 +266,13 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Transform => (S/NP)/NP {\\x y.'@Transform'(x, y)}
     $Merge => S/NP {\\x. '@Merge'(x)}
     $Merge => NP {'Merge'}
-    $Merge => (S\\NP)/NP {\\y x. '@Merge'('@Desc'(x), y)}
     $Sort => S/NP {\\x. '@Sort'(x)}
     $Sort => (S/NP)/NP {\\y x. '@Sort'('@Desc'(x), y)}
-    $Sort => (S\\NP)/NP {\\y x. '@Sort'('@Desc'(x), y)}
     $Sort => (S/NP)/NP/NP {\\y x z. '@Sort'('@Desc'(x), y)}
     $Concatenate => S/NP {\\x. '@Concatenate'(x)} # can be also Merge
     $Concatenate => S/NP/NP {\\x y. '@Concatenate'(x, y)} # can be also Merge
     $Split => S/NP {\\x. '@Split'(x)}
     $Split => (S/NP)/NP {\\y x. '@Split'('@Desc'(x), y)}
-    $Split => (S\\NP)/NP {\\y x. '@Split'('@Desc'(x), y)}
     $Round => S/NP {\\x. '@Round'(x)}
     $Round => (S/NP)/NP {\\y x. '@Round'('@Desc'(x), y)}
     $Convert => (S/NP)/NP {\\y x. '@Convert'('@Desc'(x), y)}
@@ -284,21 +280,16 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Add => NP {'Add'}
     $Add => S/NP {\\x. '@Add'(x)}
     $Add => (S/NP)/NP {\\y x. '@Add'('@Desc'(x), y)}
-    $Add => (S\\NP)/NP {\\y x. '@Add'('@Desc'(x), y)}
-    $Add => (S\\NP)/NP/NP {\\y x z. '@Add'('@Desc'(x), y, z)}
     $Remove => S/NP {\\x. '@Remove'(x)}
     $Remove => (S/NP)/NP {\\y x. '@Remove'('@Desc'(x), y)}
-    $Remove => (S\\NP)/NP {\\y x. '@Remove'('@Desc'(x), y)}
     $Remove => (S/NP)/NP/NP {\\y x z. '@Remove'('@Desc'(x), y, z)}
     $Map => (S/NP)/NP {\\y x. '@Map'('@Desc'(x), y)}
     $Create => NP/NP {\\x.'@Create'(x)}
-    $Create => NP\\NP {\\x.'@Create'(x)}
+    $Create => NP\\NP {\\x.'@Create'(x)} # TODO: Is this necessary?
     $Create => S/NP {\\x. '@Create'(x)}
     $Create => (S/NP)/NP {\\y x. '@Create'('@Desc'(x), y)}
-    $Create => (S\\NP)/NP {\\y x. '@Create'('@Desc'(x), y)}
-    $Load => NP\\NP {\\x.'@Load'(x)}
+    $Load => NP\\NP {\\x.'@Load'(x)} # TODO: Is this necessary?
     $Load => S/NP {\\x. '@Load'(x)}
-    $Load => S\\NP {\\x. '@Load'(x)} # for nouns that come before
     $Load => (S/NP)/NP {\\y x. '@Load'('@Desc'(x), y)}
     $Load => (S/NP)/NP/NP {\\y x z. '@Load'('@Desc'(x), y, z)}
     $Save => NP {'Save'}
@@ -306,7 +297,6 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Save => (S/NP)/NP {\\y x. '@Save'('@Desc'(x), y)}
     $Print => NP {'Print'}
     $Print => S/NP {\\x. '@Print'(x)}
-    $Print => S\\NP {\\x. '@Print'(x)}
     $Print => (S/NP)/NP {\\y x. '@Print'('@Desc'(x), y)}
     $Iterate => NP {'Iterator'}
     $Iterate => S/NP {\\x. '@Iterate'(x)}
@@ -321,71 +311,19 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Compare => (S/NP)/NP {\\y x. '@Compare'('@Desc'(x), y)}
     $Compare => (S/NP)/NP/NP {\\y x z. '@Compare'('@Desc'(x), y, z)}
     $Parse => S/NP {\\x. '@Parse'(x)}
-    $Parse => S\\NP {\\x. '@Parse'(x)}
     $Parse => (S/NP)/NP {\\y x. '@Parse'('@Desc'(x), y)}
     $Parse => (S/NP)/NP/NP {\\y x z. '@Parse'('@Desc'(x), y, z)}
     $Assign => (S/NP)/NP {\\y x. '@Assign'('@Desc'(x), y)}
-    $Assign => (S\\NP)/NP {\\y x. '@Assign'('@Desc'(x), y)}
     $Replace => S/NP {\\x. '@Replace'(x)}
-    $Replace => S\\NP {\\x. '@Replace'(x)}
     $Replace => (S/NP)/NP {\\y x. '@Replace'('@Desc'(x), y)}
-    $Replace => (S\\NP)/NP {\\y x. '@Replace'('@Desc'(x), y)}
     $Contain => NP/NP {\\x. '@Contain'(x)} # as it is used with other verbs
-    $Contain => S\\NP {\\x. '@Contain'(x)}
-    $Contain => (S\\NP)\\NP {\\y x. '@Contain'('@Desc'(x), y)}
+    $Contain => (S\\NP)\\NP {\\y x. '@Contain'('@Desc'(x), y)} # TODO: is this necessary?
     $Match => NP {'Match'}
     $Match => NP/NP {\\x. '@Match'(x)}
     $Match => S/NP {\\x. '@Match'(x)}
-    $Match => S\\NP {\\x. '@Match'(x)}
     $Match => (S/NP)/NP {\\y x. '@Match'('@Desc'(x), y)}
-    $Match => (S\\NP)/NP {\\y x. '@Match'('@Desc'(x), y)}
 
 '''
-#      $index => NP {'index'}
-#      $index => NP/NP {\\x. '@Concat'('index', x)}
-#      $item => NP {'item'}
-#      $item => NP/NP {\\x. '@Concat'('item', x)}
-#
-#      $of => NP {'of'}
-#      $of => NP/NP {\\x. '@Concat'('of', x)}
-#      $in => NP {'in'}
-#      $in => NP/NP {\\x. '@Concat'('in', x)}
-#
-#      $intersection => NP {'intersection'}
-#      $intersection => NP/NP {\\x. '@Concat'('intersection', x)}
-#      $nested => NP {'nested'}
-#      $nested => NP/NP {\\x. '@Concat'('nested', x)}
-#      $two => NP {'two'}
-#      $two => NP/NP {\\x. '@Concat'('two', x)}
-
-#     "index": ["$index"],
-#     "item": ["$item"],
-#     "in": ["$in"],
-#     "of": ["$of"],
-#
-#     "current": ["$current"],
-#     "dir": ["$dir"],
-#     "file": ["$file"],
-#
-#     "intersection": ["$intersection"],
-#     "nested": ["$nested"],
-#     "two": ["$two"],
-
-# $Find2 => (S/NP)/NP {\\x y.'@Find2'('@What'(y), '@Desc'(x))}
-# $Find1 => S/NP {\\x.'@Find1'('@What'(x))}
-# $Find => (S/NP)/PP {\\x y.'@Find'('@What'(y), '@Where'(x))}
-# $UNK => NP/NP {\\x.'UNK'}
-# $UNK => NP/N {\\x.'UNK'x}
-
-# $index => var/.,var {\\x. x}
-# $index => var\\.,var {\\x. x}
-# $item => var/.,var {\\x. x}
-# $item => var\\.,var {\\x. x}
-# $in => PP {\\F x. F(x)}
-
-# $of => PP {\\x F. F(x)} # element of a list -> 'List'('element')
-# $of => PP {\\x y. '@And'(x, y)}
-
 
 QUESTION_WORDS = [
     ["how", "to"],
