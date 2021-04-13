@@ -11,7 +11,7 @@ from nltk.stem import WordNetLemmatizer
 from spacy.lang.en import English
 from spacy.tokenizer import Tokenizer
 
-from parser_dict import STRING2PREDICATE, WORD2NUMBER, RAW_LEXICON, QUESTION_WORDS
+from parser_dict import STRING2PREDICATE, WORD2NUMBER, RAW_LEXICON, QUESTION_WORDS, PYTHON_WORDS
 
 DEBUG = False
 
@@ -146,9 +146,9 @@ def string_to_predicate(s, pos):
         new_rules = new_predicate + "  => N {'" + s + "'}\n"
         new_rules += new_predicate + "  => NP {'" + s + "'}\n"
         new_rules += new_predicate + \
-                     "  => NP/NP {\\x. '@Concat'('" + s + "', x)}\n"
+            "  => NP/NP {\\x. '@Concat'('" + s + "', x)}\n"
         new_rules += new_predicate + \
-                     " => S/S {\\F. F('@Desc'('" + s + "'))}\n"
+            " => S/S {\\F. F('@Desc'('" + s + "'))}\n"
         # TODO add separate rules for verbs
         return [new_predicate], new_rules
 
@@ -238,10 +238,31 @@ def remove_question_words(sentence):
     output: if the query is posed as a question, removes the question tokens, as defined in QUESTION_WORDS;
     returns the list of remaining tokens
     """
-    is_prefix = [np.all(sentence[:len(q_word)] == q_word) for q_word in QUESTION_WORDS]
+    is_prefix = [np.all(sentence[:len(q_word)] == q_word)
+                 for q_word in QUESTION_WORDS]
     if np.any(is_prefix):
         prefix = QUESTION_WORDS[np.where(is_prefix)[0][0]]
         sentence = sentence[len(prefix):]
+    return sentence
+
+
+def remove_in_python(sentence):
+    """
+    input: a list of tokens in the query;
+    output: if the query has python with a reposition, removes the tokens, as defined in PYTHON_WORDS;
+            returns the list of remaining tokens
+    """
+    all_sequences = [sentence[i: i + 2] for i in range(len(sentence))]
+    exists = [np.any(word in all_sequences) for word in PYTHON_WORDS]
+
+    if np.any(exists):
+        word = PYTHON_WORDS[np.where(exists)[0][0]]
+        index = all_sequences.index(word)
+        if index + 2 >= len(sentence):
+            sentence = sentence[:index]
+        else:
+            sentence = sentence[:index] + sentence[index + 2:]
+
     return sentence
 
 
@@ -250,20 +271,23 @@ def parse_sentence(sentence, time_limit=10):
     time_limit: if a positive number, TimeoutError will be thrown if parsing is not finished after time_limit seconds
     returns: a single parse tree
     """
-    sentence = remove_punctuation(sentence)
-    split_sentence = remove_question_words(sentence.split())
+    split_sentence = remove_punctuation(sentence).split()
+    split_sentence = remove_in_python(split_sentence)
+    split_sentence = remove_question_words(split_sentence)
     ts, new_lexicon = tokenize(split_sentence)
     if DEBUG:
         print(ts)
 
     assert len(ts) == 1  # we are processing just one sentence
     ts = ts[0]
-    beam_lexicon = copy.deepcopy(RAW_LEXICON) + quote_word_lexicon(ts) + new_lexicon
+    beam_lexicon = copy.deepcopy(RAW_LEXICON) + \
+        quote_word_lexicon(ts) + new_lexicon
     lex = lexicon.fromstring(beam_lexicon, include_semantics=True)
     parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
 
     def timeout(_, __):
-        raise TimeoutError("parsing sentence {} takes too long".format(sentence))
+        raise TimeoutError(
+            "parsing sentence {} takes too long".format(sentence))
 
     try:
         signal.signal(signal.SIGALRM, handler=timeout)
@@ -278,15 +302,12 @@ def parse_sentence(sentence, time_limit=10):
     return parse_tree
 
 
-def example():
+def example(sentence):
     # These work
-<<<<<<< HEAD
-    sentence = "iterating over a subset of a list of tuples"
-=======
-    sentence = "sort a nested list by two elements"
->>>>>>> 3db53291b617a283c6db897bd15534ffe9e3149a
-    sentence = remove_punctuation(sentence)
-    sentence = remove_question_words(sentence.split())
+    sentence = sentence.lower()
+    sentence = remove_punctuation(sentence).split()
+    sentence = remove_in_python(sentence)
+    sentence = remove_question_words(sentence)
     ts, new_lexicon = tokenize(sentence)
     # ts = tokenize("find the list".split(' '))
 
@@ -299,7 +320,8 @@ def example():
     # ts = tokenize("use glob to find files recursively".split(' '))
     # ts = tokenize("find the duplicates in a list and create another list with them".split(' '))
 
-    beam_lexicon = copy.deepcopy(RAW_LEXICON) + quote_word_lexicon(ts[0]) + new_lexicon
+    beam_lexicon = copy.deepcopy(RAW_LEXICON) + \
+        quote_word_lexicon(ts[0]) + new_lexicon
     lex = lexicon.fromstring(beam_lexicon, include_semantics=True)
     parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
     for tsi in ts:
@@ -319,5 +341,6 @@ if __name__ == "__main__":
     import time
 
     s = time.time()
-    chart.printCCGDerivation(parse_sentence('how to find the index of a value in 2d array in python?'))
+    # chart.printCCGDerivation(parse_sentence('how to find the index of a value in 2d array in python?'))
+    example("converting string series to float list")
     print("elapsed: ", time.time() - s)
