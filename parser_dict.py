@@ -79,6 +79,8 @@ STRING2PREDICATE = {
     # "rather": ["$Or"],
     # "either": ["$Or"],
     "not": ["$Not"],
+    "non": ["$Not"],
+    "none": ["$Not"],
     "nothing": ["$Not"],
     "never": ["$Not"],
     # "without": ["$Without"],
@@ -87,16 +89,16 @@ STRING2PREDICATE = {
     "find": ["$Find"],
     "locate": ["$Find"],
     "calculate": ["$Find"],
-    "extract": ["Find"],
-    "search": ["Find"],
+    "extract": ["$Find"],
+    "search": ["$Find"],
     # "find if": ["$Check"]
     # "find out": ["$Return"]?
     # kind of the same as "get"? return smth [from smth/smwh]
     "return": ["$Return"],
-    # merge smth-s into smth; merge smth-s; merge smth with smth; merge in NP[e.g. merge sort]
     "merge": ["$Merge"],
     "join": ["$Merge"],
     "zip": ["$Merge"],  # same as combine?
+    "group": ["$Concatenate"],
     "concat": ["$Concatenate"],
     "concatenate": ["$Concatenate"],
     "concatenation": ["$Concatenate"],
@@ -115,11 +117,11 @@ STRING2PREDICATE = {
     "remove": ["$Remove"],
     "delete": ["$Remove"],
     "exclude": ["$Remove"],
-    "dump": ["$Remove", "Save"],
+    "dump": ["$Remove", "$Save"],
     "disable": ["$Remove"],
+    "filter": ["$Remove"],
     "pad": ["$Pad"],
     "map": ["$Map", "$Dict"],
-    "filter": ["$Map", "$Remove"],
     "apply": ["$Map"],
     "create": ["$Create"],
     "created": ["$Create"],
@@ -139,7 +141,6 @@ STRING2PREDICATE = {
     "download": ["$Load"],
     "display": ["$Load"],
     "import": ["$Load"],
-    "use": ["$Load"],  # TODO: comment out
     "control": ["$Load"],
     "take": ["$Load"],
     "save": ["$Save"],
@@ -182,9 +183,9 @@ STRING2PREDICATE = {
     "greater than": ["$GT"],
     "equal": ["$EQ"],
     "equals": ["$EQ"],
+    "all": ["$All"],
     # "only": ["$Only"],
-    # "all": ["$All", "$And"],
-    # "every": ["$All"],
+    "every": ["$All"],
     "none": ["$None", "$Not"],
 
     # Prepositions
@@ -245,6 +246,8 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Column => NP {'Column'}
     $Null => N {'Null'}
     $Null => NP {'Null'}
+    $Zero => N {'Null'}
+    $Zero => NP {'Null'}
     $Number => N {'Number'}
     $Number => NP {'Number'}
     $Set => N {'Set'}
