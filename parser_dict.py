@@ -190,6 +190,16 @@ STRING2PREDICATE = {
 
     # Prepositions
     "by": ["$By"],
+    "of": ["$Of"],
+    "in": ["$In"],
+    "inside": ["$In"],
+    "from": ["$From"],
+    "based on": ["$By"],
+    "into": ["$Into"],
+    "to": ["$To"],
+    "using": ["$With"],
+    "with": ["$With"],
+    "with the help of": ["$With"],
     # "as": ["$as"],
 }
 
@@ -262,7 +272,10 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Exist => NP/NP {\\x. '@Exist'(x)}
 
     $Find => S/NP {\\x.'@Find'(x)}
-    $Find => (S/NP)/NP {\\y x.'@Find'('@Desc'(x), y)}
+    $Find => (S/NP)/PP {\\y x.'@Find'(x, y)}
+    $Find => S/PP {\\x.'@Find'(x)}
+    $Find => (S/PP)/PP {\\y x.'@Find'(x, y)}
+    
     $Return => S/NP {\\x.'@Return'(x)}
     $Return => (S/NP)/NP {\\y x.'@Return'('@Desc'(x), y)}
     $Return => (S/NP)/NP/NP {\\y x z.'@Return'('@Desc'(x), y, z)}
@@ -325,7 +338,28 @@ RAW_LEXICON = ''' :- S, NP, N, VP
     $Match => NP/NP {\\x. '@Match'(x)}
     $Match => S/NP {\\x. '@Match'(x)}
     $Match => (S/NP)/NP {\\y x. '@Match'('@Desc'(x), y)}
-
+    $Match => (S/NP)/PP {\\y x. '@Match'(x, y)}
+    
+    # Prepositions
+    $Of => PP/NP {\\x. x}
+    $Of => (NP/NP)\\NP {\\F x. F(x)}
+    
+    $In => PP/NP {\\x. '@In'(x)}
+    $In => (NP/NP)\\NP {\\x y. '@In'(x, y)}
+    $From => PP/NP {\\x. '@From'(x)}
+    $By => PP/NP {\\x.'@By'(x)}
+    $Into => PP/NP {\\x.'@Into'(x)}
+    $To => PP/NP {\\x.'@To'(x)}
+    $With => PP/NP {\\x. '@With'(x)}
+    
+    $To => S/S {\\x. x}
+    
+    $And => var\\.,var/.,var {\\y x.'@And'(x,y)}
+    $Or => var\\.,var/.,var {\\y x.'@Or'(x,y)}
+    $Not => S/NP {\\x. '@Not'(x)} # is used in and a lot
+    $Not => NP/NP {\\x. '@Not'(x)}
+    $All => NP/NP {\\x. '@All'(x)} 
+    $Exist => NP/NP {\\x. '@Exist'(x)}
 '''
 
 QUESTION_WORDS = [
