@@ -1,12 +1,19 @@
+import copy
+import logging
+import signal
+import string
+
+import nltk
+import numpy as np
+from nltk.ccg import chart, lexicon
+from nltk.corpus import wordnet
+from nltk.stem import WordNetLemmatizer
 from spacy.lang.en import English
 from spacy.tokenizer import Tokenizer
 
-import copy
-import logging
-import string
-from parser_dict import STRING2PREDICATE, WORD2NUMBER, RAW_LEXICON
-from nltk.ccg import chart, lexicon
+from parser_dict import STRING2PREDICATE, WORD2NUMBER, RAW_LEXICON, QUESTION_WORDS
 
+DEBUG = False
 
 BEAM_WIDTH = 100
 MAX_PHRASE_LEN = 4
@@ -46,13 +53,24 @@ TAGS_OF_INTEREST = ['NP', 'VP', 'PP',
                     'NN', 'NNS', 'NNP', 'NNPS', 'PRP', 'PRP$',
                     'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
 
-
 nlp = English()
 tokenizer = Tokenizer(nlp.vocab)
 
 logger = logging.getLogger(__name__)
 
-### Helper functions for Preprocessing Explanations ###
+
+def get_wordnet_pos(treebank_tag):
+    '''Convert from Treebank POS tags to Wordnet POS tags'''
+    if treebank_tag.startswith('J'):
+        return wordnet.ADJ
+    elif treebank_tag.startswith('V'):
+        return wordnet.VERB
+    elif treebank_tag.startswith('N'):
+        return wordnet.NOUN
+    elif treebank_tag.startswith('R'):
+        return wordnet.ADV
+    else:
+        return ''
 
 
 def fill_whitespace_in_quote(sentence):
@@ -96,35 +114,43 @@ def preprocess_sent(sentence):
     return ret_sentences
 
 
-def string_to_predicate(s):
+def string_to_predicate(s, pos):
     """input: one string (can contain multiple tokens with ;
     output: a list of predicates."""
+    new_rules = ""
+
     if s != ',' and s not in REVERSE_SPECIAL_CHARS:
         s = s.lower().strip(',')
     if s.startswith("$"):
-        return [s]
+        return [s], new_rules
     elif s.startswith("\"") and s.endswith("\""):
-        return ["'" + s[1:-1] + "'"]
+        return ["'" + s[1:-1] + "'"], new_rules
     elif s in STRING2PREDICATE:
-        return STRING2PREDICATE[s]
+        return STRING2PREDICATE[s], new_rules
     elif s.isdigit():
-        return ["'" + s + "'"]
-        # return ["$UNK"]
+        return ["'" + s + "'"], new_rules
     elif s in WORD2NUMBER:
-        # return ["$UNK"]
-        return ["'" + WORD2NUMBER[s] + "'"]
+        return ["'" + WORD2NUMBER[s] + "'"], new_rules
     # TODO: maybe replace the allow_phrases part with a check here
     # to see if we are handling a single word or a phrase?
 
     # if the word is not found in our vocabulary of predicates, add it
     else:
-        global RAW_LEXICON
+        if pos:
+            lemmatizer = WordNetLemmatizer()
+            lemma_form = lemmatizer.lemmatize(s, pos)
+            if lemma_form in STRING2PREDICATE:
+                return STRING2PREDICATE[lemma_form], new_rules
         new_predicate = "$" + s
-        new_rules = new_predicate + "  => NP {'" + s + "'}\n"
+        # rules for noun phrases
+        new_rules = new_predicate + "  => N {'" + s + "'}\n"
+        new_rules += new_predicate + "  => NP {'" + s + "'}\n"
         new_rules += new_predicate + \
-            " => NP/NP {\\x. '@Concat'('" + s + "', x)}\n"
-        RAW_LEXICON += new_rules
-        return [new_predicate]
+                     "  => NP/NP {\\x. '@Concat'('" + s + "', x)}\n"
+        new_rules += new_predicate + \
+                     " => S/S {\\F. F('@Desc'('" + s + "'))}\n"
+        # TODO add separate rules for verbs
+        return [new_predicate], new_rules
 
 
 def tokenize(sentence, allow_phrases=False):
@@ -132,22 +158,26 @@ def tokenize(sentence, allow_phrases=False):
     output: a list of possible tokenization of the sentence;
     each token can be mapped to multiple predicates"""
     # log[j] is a list containing temporary results using 0..(j-1) tokens
+    pos_tags = [get_wordnet_pos(pair[1]) for pair in nltk.pos_tag(sentence)]
+    assert len(pos_tags) == len(sentence)
     log = {i: [] for i in range(len(sentence) + 1)}
     log[0] = [[]]
-    for i, token in enumerate(sentence):
+    new_lexicon = ""
+    for i, (token, pos_tag) in enumerate(zip(sentence, pos_tags)):
         for _range in range(1, MAX_PHRASE_LEN + 1):
             if i + _range > len(sentence):
                 break
             phrase = ' '.join(sentence[i:i + _range])
             if not allow_phrases and _range > 1:
                 break
-            predicates = string_to_predicate(phrase)
+            predicates, rules = string_to_predicate(phrase, pos_tag)
+            new_lexicon += rules
             for temp_result in log[i]:
                 for predicate in predicates:
                     log[i + _range].append(temp_result + [predicate])
             if token.startswith("\""):  # avoid --"A" and "B"-- treated as one predicate
                 break
-    return log[len(sentence)]
+    return log[len(sentence)], new_lexicon
 
 
 def get_word_name(layer, st, idx):
@@ -203,29 +233,62 @@ def quote_word_lexicon(sentence):
     return ret
 
 
+def remove_question_words(sentence):
+    """input: a list of tokens in the query;
+    output: if the query is posed as a question, removes the question tokens, as defined in QUESTION_WORDS;
+    returns the list of remaining tokens
+    """
+    is_prefix = [np.all(sentence[:len(q_word)] == q_word) for q_word in QUESTION_WORDS]
+    if np.any(is_prefix):
+        prefix = QUESTION_WORDS[np.where(is_prefix)[0][0]]
+        sentence = sentence[len(prefix):]
+    return sentence
+
+
+def parse_sentence(sentence, time_limit=10):
+    """ sentence: preprocess and parse a single sentence.
+    time_limit: if a positive number, TimeoutError will be thrown if parsing is not finished after time_limit seconds
+    returns: a single parse tree
+    """
+    sentence = remove_punctuation(sentence)
+    split_sentence = remove_question_words(sentence.split())
+    ts, new_lexicon = tokenize(split_sentence)
+    if DEBUG:
+        print(ts)
+
+    assert len(ts) == 1  # we are processing just one sentence
+    ts = ts[0]
+    beam_lexicon = copy.deepcopy(RAW_LEXICON) + quote_word_lexicon(ts) + new_lexicon
+    lex = lexicon.fromstring(beam_lexicon, include_semantics=True)
+    parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
+
+    def timeout(_, __):
+        raise TimeoutError("parsing sentence {} takes too long".format(sentence))
+
+    try:
+        signal.signal(signal.SIGALRM, handler=timeout)
+        signal.alarm(time_limit)
+        parse_tree = next(parser.parse(ts))
+    except:
+        # this should be called to avoid throwing one more exception
+        signal.alarm(0)
+        raise
+    else:
+        signal.alarm(0)
+    return parse_tree
+
+
 def example():
     # These work
+<<<<<<< HEAD
     sentence = "iterating over a subset of a list of tuples"
+=======
+    sentence = "sort a nested list by two elements"
+>>>>>>> 3db53291b617a283c6db897bd15534ffe9e3149a
     sentence = remove_punctuation(sentence)
-    ts = tokenize(sentence.split(' '))
+    sentence = remove_question_words(sentence.split())
+    ts, new_lexicon = tokenize(sentence)
     # ts = tokenize("find the list".split(' '))
-
-    # These do not work
-    # a) how to turn number tokens into something in logic form?
-    # ts = tokenize("find two lists".split(' '))
-    # desired output after parsing: "@Find('List', '2')" or "@Find('List', '2 lists')"
-    # b) how to handle out of vocabulary expressions, we want to pass
-    # them as a textual argument, e.g.
-    # ts = tokenize("find jibberjabber gobbledygook lists".split(' '))
-    # desired output after parsing: @Find('List', 'jibber-jabber gobbledygook lists')
-
-    # Example: "Finding the index of an item in a list"
-    # Example: "Find intersection of two nested lists?"
-    # 1) *.lowercase()
-    # 1a) remove question words and question marks at the end
-    # TODO: 2) bring verbs to their canonical form: finding -> find
-    # "find the index of an item in a list" -> @Find(what = "the index of an item"[NP], where="in a list"[PP?])
-    # "find intersection of two nested lists" -> @Find(what = "intersection of two nested lists"[NP])
 
     # ts = tokenize("find the index of an item in a list".split(' '))
     # ts = tokenize("find intersection of nested lists".split(' '))
@@ -236,7 +299,7 @@ def example():
     # ts = tokenize("use glob to find files recursively".split(' '))
     # ts = tokenize("find the duplicates in a list and create another list with them".split(' '))
 
-    beam_lexicon = copy.deepcopy(RAW_LEXICON) + quote_word_lexicon(ts[0])
+    beam_lexicon = copy.deepcopy(RAW_LEXICON) + quote_word_lexicon(ts[0]) + new_lexicon
     lex = lexicon.fromstring(beam_lexicon, include_semantics=True)
     parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
     for tsi in ts:
@@ -249,4 +312,12 @@ def example():
 
 
 if __name__ == "__main__":
-    example()
+    # First time running will require downloading following nltk datasets
+    # nltk.download('wordnet')
+    # nltk.download('averaged_perceptron_tagger')
+
+    import time
+
+    s = time.time()
+    chart.printCCGDerivation(parse_sentence('how to find the index of a value in 2d array in python?'))
+    print("elapsed: ", time.time() - s)

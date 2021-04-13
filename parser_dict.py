@@ -80,13 +80,14 @@ STRING2PREDICATE = {
     # "rather": ["$Or"],
     # "either": ["$Or"],
     "not": ["$Not"],
+    "non": ["$Not"],
+    "none": ["$Not"],
     "nothing": ["$Not"],
     "never": ["$Not"],
     # "without": ["$Without"],
 
     # Transforming verbs
     "find": ["$Find"],
-    "finding": ["$Find"],
     "locate": ["$Find"],
     "locating": ["$Find"],
     "calcuate": ["$Find"],
@@ -109,15 +110,14 @@ STRING2PREDICATE = {
     "grouping": ["$Merge"],
     "concat": ["$Concatenate"],
     "concatenate": ["$Concatenate"],
-    "concatenating": ["$Concatenate"],
     "concatenation": ["$Concatenate"],
+    "append": ["$Concatenate"],
     "combine": ["$Concatenate"],
     "combinate": ["$Concatenate"],
     "zip": ["$Concatenate"],
     "slice": ["$Split"],
     "slicing": ["$Split"],
     "split": ["$Split"],
-    "splitting": ["$Split"],
     "round": ["$Round"],
     "rounding": ["$Round"],
     "limiting": ["$Round"],
@@ -146,7 +146,6 @@ STRING2PREDICATE = {
     "averaging": ["$Add"],
     "increase": ["$Add"],
     "remove": ["$Remove"],
-    "removing": ["$Remove"],
     "delete": ["$Remove"],
     "deleting": ["$Remove"],
     "drop": ["$Remove"],
@@ -175,7 +174,6 @@ STRING2PREDICATE = {
     "declare": ["$Create"],
     "define": ["$Create"],
     "copy": ["$Create"],
-    "copying": ["$Create"],
     "make": ["$Create"],
     "making": ["$Create"],
     "construct": ["$Create"],
@@ -190,10 +188,8 @@ STRING2PREDICATE = {
     "detect": ["$Load"],
     "select": ["$Load"],
     "selected": ["$Load"],
-    "selecting": ["$Load"],
     "upload": ["$Load"],
     "download": ["$Load"],
-    "downloading": ["$Load"],
     "display": ["$Load"],
     "displaying": ["$Load"],
     "call": ["$Load"],
@@ -258,8 +254,8 @@ STRING2PREDICATE = {
     "updating": ["$Save"],
     "keep": ["$Save"],
     "print": ["$Print"],
-    "printing": ["$Print"],
     "show": ["$Print"],
+    "repeat": ["$Iterate"],
     "iterate": ["$Iterate"],
     "iter": ["$Iterate"],
     "iterator": ["$Iterate"],
@@ -274,22 +270,18 @@ STRING2PREDICATE = {
     "pad": ["$Append"],
     "padding": ["$Append"],
     "break": ["$Break"],
-    "breaks": ["$Break"],
-    "continue": ["$Continue"], # no examples found for continue
+    "continue": ["$Continue"],  # no examples found for continue
     "cont": ["$Continue"],
     "skip": ["$Continue"],
     "followed": ["$Continue"],
     "determine": ["$Compare"],
     "check": ["$Compare"],
-    "checking": ["$Compare"],
     "comp": ["$Compare"],
-    "comparing": ["$Compare"],
     "compare": ["$Compare"],
     "normalizing": ["$Parse"],
     "normalize": ["$Parse"],
     "flatten": ["$Parse"],
     "parse": ["$Parse"],
-    "parsing": ["$Parse"],
     "assign": ["$Assign"],
     "assignment": ["$Assign"],
     "assigning": ["$Assign"],
@@ -299,12 +291,8 @@ STRING2PREDICATE = {
     "order": ["$Sort"],
     "ordered": ["$Sort"],
     "sort": ["$Sort"],
-    # "sorted": ["$Sort"],
-    "sorting": ["$Sort"],
+    "order": ["$Sort"],
     "contain": ["$Contain"],
-    "contained": ["$Contain"],
-    "contains": ["$Contain"],
-    "containing": ["$Contain"],
     "match": ["$Match"],
     "matched": ["$Match"],
     "matchable": ["$Match"],
@@ -314,7 +302,6 @@ STRING2PREDICATE = {
     "change": ["$Replace"],
     "changing": ["$Replace"],
     "replace": ["$Replace"],
-    "replacing": ["$Replace"],
     "replacement": ["$Replace"],
     "substitute": ["$Replace"],
     "swap": ["$Replace"],
@@ -329,9 +316,9 @@ STRING2PREDICATE = {
     "greater than": ["$GT"],
     "equal": ["$EQ"],
     "equals": ["$EQ"],
+    "all": ["$All"],
     # "only": ["$Only"],
-    # "all": ["$All", "$And"],
-    # "every": ["$All"],
+    "every": ["$All"],
     "none": ["$None", "$Not"],
 
     # Prepositions
@@ -401,6 +388,8 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Column => NP {'Column'}
     $Null => N {'Null'}
     $Null => NP {'Null'}
+    $Zero => N {'Null'}
+    $Zero => NP {'Null'}
     $Number => N {'Number'}
     $Number => NP {'Number'}
     $Set => N {'Set'}
@@ -438,7 +427,6 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Exist => NP/NP {\\x. '@Exist'(x)}
 
     $Find => S/NP {\\x.'@Find'(x)}
-    $Find => (S\\NP)/NP {\\y x.'@Find'('@Desc'(x), y)}
     $Find => (S/NP)/NP {\\y x.'@Find'('@Desc'(x), y)}
     $Find => (S/NP)/PP {\\y x.'@Find'('@Desc'(x), y)}
     $Find => (S\\PP\\PP)/PP {\\y x z.'@Find'('@Desc'(x), y, z)}
@@ -529,7 +517,7 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Map => (S/NP)/PP/NP {\\y x z. '@Map'('@Desc'(y), z, x)}
     $Map => (S/PP)/PP/NP {\\y x z. '@Map'('@Desc'(y), z, x)}
     $Create => NP/NP {\\x.'@Create'(x)}
-    $Create => NP\\NP {\\x.'@Create'(x)}
+    $Create => NP\\NP {\\x.'@Create'(x)} # TODO: Is this necessary?
     $Create => S/NP {\\x. '@Create'(x)}
     $Create => (S/NP)/NP {\\y x. '@Create'('@Desc'(x), y)}
     $Create => (S/NP)/PP {\\y x. '@Create'('@Desc'(x), y)}
@@ -566,7 +554,6 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Save => (S/PP)/PP/NP/NP {\\y x z k. '@Save'('@Desc'(y), x, z, k)}'
     $Print => NP {'Print'}
     $Print => S/NP {\\x. '@Print'(x)}
-    $Print => S\\NP {\\x. '@Print'(x)}
     $Print => (S/NP)/NP {\\y x. '@Print'('@Desc'(x), y)}
     $Print => (S/NP)/PP {\\y x. '@Print'('@Desc'(x), y)}
     $Print => (S/PP)/PP/NP {\\y x z. '@Print'('@Desc'(y), z, x)}
@@ -590,7 +577,6 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Compare => (S/NP)/PP/NP {\\y x z. '@Compare'('@Desc'(y), z, x)}
     $Compare => (S/PP)/PP/NP {\\y x z. '@Compare'('@Desc'(y), z, x)}
     $Parse => S/NP {\\x. '@Parse'(x)}
-    $Parse => S\\NP {\\x. '@Parse'(x)}
     $Parse => (S/NP)/NP {\\y x. '@Parse'('@Desc'(x), y)}
     $Parse => (S/NP)/PP {\\y x. '@Parse'('@Desc'(x), y)}
     $Parse => (S/NP)/NP/NP {\\y x z. '@Parse'('@Desc'(x), y, z)}
@@ -603,7 +589,6 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Assign => (S/NP)/PP {\\y x. '@Assign'('@Desc'(y), x)}
     $Assign => (S/PP)/PP/NP {\\y x z. '@Assign'('@Desc'(y), x, z)}
     $Replace => S/NP {\\x. '@Replace'(x)}
-    $Replace => S\\NP {\\x. '@Replace'(x)}
     $Replace => (S/NP)/NP {\\y x. '@Replace'('@Desc'(x), y)}
     $Replace => (S/NP)/PP {\\y x. '@Replace'('@Desc'(x), y)}
     $Replace => (S\\NP)/NP {\\y x. '@Replace'('@Desc'(x), y)}
@@ -617,74 +602,25 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Match => NP {'Match'}
     $Match => NP/NP {\\x. '@Match'(x)}
     $Match => S/NP {\\x. '@Match'(x)}
-    $Match => S\\NP {\\x. '@Match'(x)}
     $Match => (S/NP)/NP {\\y x. '@Match'('@Desc'(x), y)}
     $Match => (S/NP)/PP {\\y x. '@Match'('@Desc'(x), y)}
     $Match => (S\\NP)/NP {\\y x. '@Match'('@Desc'(x), y)}
 
 '''
-#      $index => NP {'index'}
-#      $index => NP/NP {\\x. '@Concat'('index', x)}
-#      $item => NP {'item'}
-#      $item => NP/NP {\\x. '@Concat'('item', x)}
-#
-#      $of => NP {'of'}
-#      $of => NP/NP {\\x. '@Concat'('of', x)}
-#      $in => NP {'in'}
-#      $in => NP/NP {\\x. '@Concat'('in', x)}
-#
-#      $intersection => NP {'intersection'}
-#      $intersection => NP/NP {\\x. '@Concat'('intersection', x)}
-#      $nested => NP {'nested'}
-#      $nested => NP/NP {\\x. '@Concat'('nested', x)}
-#      $two => NP {'two'}
-#      $two => NP/NP {\\x. '@Concat'('two', x)}
-
-#     "index": ["$index"],
-#     "item": ["$item"],
-#     "in": ["$in"],
-#     "of": ["$of"],
-#
-#     "current": ["$current"],
-#     "dir": ["$dir"],
-#     "file": ["$file"],
-#
-#     "intersection": ["$intersection"],
-#     "nested": ["$nested"],
-#     "two": ["$two"],
-
-# $Find2 => (S/NP)/NP {\\x y.'@Find2'('@What'(y), '@Desc'(x))}
-# $Find1 => S/NP {\\x.'@Find1'('@What'(x))}
-# $Find => (S/NP)/PP {\\x y.'@Find'('@What'(y), '@Where'(x))}
-# $UNK => NP/NP {\\x.'UNK'}
-# $UNK => NP/N {\\x.'UNK'x}
-
-# $index => var/.,var {\\x. x}
-# $index => var\\.,var {\\x. x}
-# $item => var/.,var {\\x. x}
-# $item => var\\.,var {\\x. x}
-# $in => PP {\\F x. F(x)}
-
-# $of => PP {\\x F. F(x)} # element of a list -> 'List'('element')
-# $of => PP {\\x y. '@And'(x, y)}
-
 
 QUESTION_WORDS = [
-    "(what|what's)",
-    "(who|who's)",
-    "where",
-    "when",
-    "which",
-    "whose",
-    "whom",
-    "how",
-    "why",
-    "(can|could|may|might|should)",
-    "(is|are|were|was)",
-    "(will|would)",
-    "(do|does|did)",
-    "(has|have|had)",
-    "how do I",
-    "(best|fastest|most efficient) way to",
-    # "(name|identify|describe|define)" # TODO
+    ["how", "to"],
+    ['how', 'do', 'i'], ['how', 'would', 'i'], ['how', 'should', 'i'], ['how', 'i', 'would'], ['how', 'i', 'should'],
+    ['how', 'can', 'i'], ['can', 'i'], ['how', 'i', 'can'],
+    ['how', 'do', 'we'], ['how', 'would', 'we'], ['how', 'should', 'we'], ['how', 'we', 'would'],
+    ['how', 'we', 'should'],
+    ['how', 'can', 'we'], ['can', 'we'], ['how', 'we', 'can'],
+    ['how', 'do', 'you'], ['how', 'would', 'you'], ['how', 'should', 'you'], ['how', 'you', 'would'],
+    ['how', 'you', 'should'],
+    ['how', 'can', 'you'], ['can', 'you'], ['how', 'you', 'can'],
+    ['how', 'does', 'one'], ['how', 'would', 'one'], ['how', 'should', 'one'], ['how', 'one', 'would'],
+    ['how', 'one', 'should'],
+    ['how', 'can', 'one'], ['can', 'one'], ['how', 'one', 'can'],
+    ['cannot'], ["can't"], ['can', 'not'],
+    ['is', 'there'], ['are', 'there'], ['is', 'it', 'possible', 'to'],
 ]
