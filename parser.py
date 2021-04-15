@@ -16,7 +16,7 @@ from parser_dict import STRING2PREDICATE, WORD2NUMBER, RAW_LEXICON, QUESTION_WOR
 DEBUG = False
 
 BEAM_WIDTH = 100
-MAX_PHRASE_LEN = 4
+MAX_PHRASE_LEN = 3
 
 COMMA_INDEX = {',': 0, '-LRB-': 1, '-RRB-': 2, '.': 3, '-': 4}
 SPECIAL_CHARS = {' ': '_', '(': '[LEFT_BRACKET]', ')': '[RIGHT_BRACKET]',
@@ -261,9 +261,16 @@ def remove_in_python(sentence):
         if index + 2 >= len(sentence):
             sentence = sentence[:index]
         else:
+            #for numerical values that come after python
+            if sentence[index + 2].isnumeric():
+                sentence = sentence[:index + 1] + sentence[index + 2:]
             sentence = sentence[:index] + sentence[index + 2:]
 
     return sentence
+
+
+def remove_specific_word(sentence, word='python'):
+    return list(filter((word).__ne__, sentence))
 
 
 def parse_sentence(sentence, time_limit=10):
@@ -307,6 +314,7 @@ def example(sentence):
     sentence = sentence.lower()
     sentence = remove_punctuation(sentence).split()
     sentence = remove_in_python(sentence)
+    sentence = remove_specific_word(sentence)
     sentence = remove_question_words(sentence)
     ts, new_lexicon = tokenize(sentence)
     # ts = tokenize("find the list".split(' '))
@@ -342,5 +350,5 @@ if __name__ == "__main__":
 
     s = time.time()
     # chart.printCCGDerivation(parse_sentence('how to find the index of a value in 2d array in python?'))
-    example("converting string series to float list")
+    example("how to get tuples from lists using list comprehension in python ")
     print("elapsed: ", time.time() - s)
