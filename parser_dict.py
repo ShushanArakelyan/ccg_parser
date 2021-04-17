@@ -90,27 +90,24 @@ STRING2PREDICATE = {
     # Transforming verbs
     'find': ['$Find'],
     'locate': ['$Find'],
-    'locating': ['$Find'],
     'calcuate': ['$Find'],
     'search': ['$Find'],
-    'searching': ['$Find'],
     'filter': ['$Find'],
-    'filtering': ['$Find'],
     'extract': ['$Find'],
     'lookup': ['$Find'],
+    'understand': ['$Find'],
     # 'find if': ['$Check']
     # 'find out': ['$Return']?
     # kind of the same as 'get'? return smth [from smth/smwh]
     'return': ['$Return'],
     'fallback': ['$Return'],
+    'raise': ['$Return'],
     # merge smth-s into smth; merge smth-s; merge smth with smth; merge in NP[e.g. merge sort]
     'merge': ['$Merge'],
-    'merging': ['$Merge'],
     'join': ['$Merge'],
-    'joining': ['$Merge'],
     'coalesce': ['$Merge'],
     'group': ['$Merge'],
-    'grouping': ['$Merge'],
+    'interleave': ['$Merge'],
     'concat': ['$Concatenate'],
     'concatenate': ['$Concatenate'],
     'concatenation': ['$Concatenate'],
@@ -121,28 +118,26 @@ STRING2PREDICATE = {
     'zip': ['$Concatenate'],
     'stack': ['$Concatenate'],
     'slice': ['$Split'],
-    'slicing': ['$Split'],
     'split': ['$Split'],
     'cut': ['$Split'],
+    'segment': ['$Split'],
     'round': ['$Round'],
-    'rounding': ['$Round'],
-    'limiting': ['$Round'],
+    'limit': ['$Round'],
     'clamping': ['$Round'],
+    'throttle': ['$Round'],
     'reset': ['$Convert'],
     'rename': ['$Convert'],
     'convert': ['$Convert'],
-    'converting': ['$Convert'],
     'translate': ['$Convert'],
     'turn': ['$Convert'],
-    'turning': ['$Convert'],
     'divide': ['$Convert'],
     'transform': ['$Convert'],
-    'transforming': ['$Convert'],
     'aggregate': ['$Convert'],
     'unpivot': ['$Convert'],
     'encode': ['$Convert'],
     'urlencode': ['$Convert'],
     'decode': ['$Convert'],
+    'customize': ['$Convert'],
     'binarize': ['$Convert'],
     'inverse': ['$Convert'],
     'color': ['$Convert'],
@@ -152,29 +147,30 @@ STRING2PREDICATE = {
     'editing': ['$Convert'],
     'compress': ['$Convert'],
     'hash': ['$Convert'],
+    'decorate': ['$Convert'],
+    'serialize': ['$Convert'],
+    'wrap': ['$Convert'],
     'add': ['$Add'],
     'addition': ['$Add'],
-    'adding': ['$Add'],
     'format': ['$Add'],
     'formatting': ['$Add'],
     'insert': ['$Add'],
     'inserting': ['$Add'],
     'multiply': ['$Add'],
-    'multiplying': ['$Add'],
     'multiplication': ['$Add'],
     'average': ['$Add'],
-    'averaging': ['$Add'],
+    'share': ['$Add'],
     'integrate': ['$Add'],
     'increase': ['$Add'],
     'feed': ['$Add'],
+    'code': ['$Add'],
+    'improve': ['$Add'],
+    'subclass': ['$Add'],
     'remove': ['$Remove'],
     'delete': ['$Remove'],
-    'deleting': ['$Remove'],
     'drop': ['$Remove'],
-    'droping': ['$Remove'],
-    'dropping': ['$Remove'],
+    'suppress': ['$Remove'],
     'dump': ['$Remove'],
-    'dumping': ['$Remove'],
     'disable': ['$Remove'],
     'kill': ['$Remove'],
     'exclude': ['$Remove'],
@@ -184,154 +180,165 @@ STRING2PREDICATE = {
     'ignore': ['$Remove'],
     'exit': ['$Remove'],
     'erase': ['$Remove'],
+    'reduce': ['$Remove'],
+    'dereference': ['$Remove'],
+    'disallow': ['$Remove'],
     'clear': ['$Remove'],
+    'clean': ['$Remove'],
     'escape': ['$Remove'],
     'suppress': ['$Remove'],
+    'close': ['$Remove'],
+    'rollback': ['$Remove'],
+    'abort': ['$Remove'],
     'pad': ['$Pad'],
     'map': ['$Map', '$Dict'],
     'unzip': ['$Map'],
     'unpack': ['$Map'],
     'unpacking': ['$Map'],
+    'interpolate': ['$Map'],
     'reverse': ['$Map'],
     'create': ['$Create'],
-    'creating': ['$Create'],
-    'created': ['$Create'],
     'generate': ['$Create'],
     'initialize': ['$Create'],
+    'duplicate': ['$Create'],
     'init': ['$Create'],
     'declare': ['$Create'],
     'define': ['$Create'],
     'copy': ['$Create'],
     'make': ['$Create'],
-    'making': ['$Create'],
     'construct': ['$Create'],
     'produce': ['$Create'],
+    'rebuild': ['$Create'],
     'draw': ['$Create'],
+    'programm': ['$Create'],
     'load': ['$Load'],
     'read': ['$Load'],
-    'reading': ['$Load'],
+    'describe': ['$Load'],
+    'crawl': ['$Load'],
+    'repeat': ['$Load'],
+    'indicate': ['$Load'],
+    'unroll': ['$Load'],
+    'grow': ['$Load'],
+    'serve': ['$Load'],
     'know': ['$Load'],
+    'shade': ['$Load'],
+    'interact': ['$Load'],
     'pass': ['$Load'],
-    'passing': ['$Load'],
     'get': ['$Load'],
-    'getting': ['$Load'],
+    'talk': ['$Load'],
+    'build': ['$Load'],
     'apply': ['$Load'],
-    'improve': ['$Load'],
     'detect': ['$Load'],
     'animate': ['$Load'],
+    'connect': ['$Load'],
     'select': ['$Load'],
-    'selected': ['$Load'],
     'upload': ['$Load'],
     'download': ['$Load'],
     'display': ['$Load'],
-    'displaying': ['$Load'],
     'call': ['$Load'],
-    'calling': ['$Load'],
+    'edit': ['$Load'],
     'sample': ['$Load'],
-    'sampling': ['$Load'],
     'resample': ['$Load'],
     'throw': ['$Load'],
-    'plot': ['$Load'],
-    'plotting': ['$Load'],
+    # 'plot': ['$Load'],
     'access': ['$Load'],
-    'accessing': ['$Load'],
     'use': ['$Load'],
     'control': ['$Load'],
     'take': ['$Load'],
-    'taking': ['$Load'],
-    'count': ['$Load'],
+    # 'count': ['$Load'],
     'choose': ['$Load'],
     'input': ['$Load'],
     'implement': ['$Load'],
-    'implementing': ['$Load'],
+    'reference': ['$Load'],
+    'listen': ['$Load'],
     'blaze': ['$Load'],
     'extract': ['$Load'],
-    'extracting': ['$Load'],
     'calculate': ['$Load'],
     'account': ['$Load'],
     'launch': ['$Load'],
     'stream': ['$Load'],
     'run': ['$Load'],
     'fill': ['$Load'],
-    'count': ['$Load'],
-    'counting': ['$Load'],
     'derive': ['$Load'],
     'click': ['$Load'],
     'sum': ['$Load'],
     'subtract': ['$Load'],
-    'exploding': ['$Load'],
+    'explode': ['$Load'],
     'refer': ['$Load'],
     'use': ['$Load'],
-    'using': ['$Load'],
     'compile': ['$Load'],
     'import': ['$Load'],
-    'importing': ['$Load'],
     'execute': ['$Load'],
     'redirect': ['$Load'],
     'retrieve': ['$Load'],
-    'retrieving': ['$Load'],
-    'logging': ['$Load'],
+    'log': ['$Load'],
     'listing': ['$Load'],
     'capture': ['$Load'],
-    'capturing': ['$Load'],
     'obtain': ['$Load'],
     'pull': ['$Load'],
     'grab': ['$Load'],
     'open': ['$Load'],
-    'receiving': ['$Load'],
+    'receive': ['$Load'],
     'send': ['$Load'],
     'fitting': ['$Load'],
     'sending': ['$Load'],
     'identify': ['$Load'],
-    'identifying': ['$Load'],
-    'animating': ['$Load'],
+    'animate': ['$Load'],
     'process': ['$Load'],
     'go': ['$Load'],
     'track': ['$Load'],
     'install': ['$Load'],
-    'installing': ['$Load'],
+    'connect': ['$Load'],
     'perform': ['$Load'],
     'scroll': ['$Load'],
+    'debug': ['$Load'],
+    'fetch': ['$Load'],
     'handle': ['$Load'],
     'work': ['$Load'],
+    'inherit': ['$Load'],
     'moderate': ['$Load'],
+    'output': ['$Load'],
     'play': ['$Load'],
+    'annotate': ['$Load'],
     'test': ['$Load'],
+    'evaluate': ['$Load'],
     'visualize': ['$Load'],
     'simulate': ['$Load'],
     'login': ['$Load'],
+    'solve': ['$Load'],
+    'do': ['$Load'],
+    # 'frame': ['$Load'],
     'save': ['$Save'],
-    'saved': ['$Save'],
-    'saving': ['$Save'],
+    'submit': ['$Save'],
     'set': ['$Set', '$Save'],
-    'setting': ['$Save'],
     'compute': ['$Save'],
     'write': ['$Save'],
-    'writing': ['$Save'],
+    'put': ['$Save'],
     'update': ['$Save'],
-    'updating': ['$Save'],
+    'store': ['$Save'],
     'configure': ['$Save'],
+    'export': ['$Save'],
     'keep': ['$Save'],
+    'validate': ['$Save'],
+    'preserve': ['$Save'],
+    'pickle': ['$Save'],
     'print': ['$Print'],
-    'printing': ['$Print'],
     'show': ['$Print'],
     'repeat': ['$Iterate'],
     'iterate': ['$Iterate'],
     'iter': ['$Iterate'],
     'iterator': ['$Iterate'],
     'iterators': ['$Iterate'],
-    'iterating': ['$Iterate'],
     'loop': ['$Iterate'],
-    # 'it': ['$Iterate'],
+    'enumerate': ['$Iterate'],
     'extend': ['$Append'],
     'append': ['$Append'],
     'prepend': ['$Append'],
-    'appending': ['$Append'],
     'pad': ['$Append'],
     'scale': ['$Append'],
     'expand': ['$Append'],
-    'padding': ['$Append'],
     'pack': ['$Append'],
+    'bind': ['$Append'],
     'break': ['$Break'],
     'stop': ['$Break'],
     'continue': ['$Continue'],  # no examples found for continue
@@ -343,13 +350,13 @@ STRING2PREDICATE = {
     'see': ['$Compare'],
     'comp': ['$Compare'],
     'compare': ['$Compare'],
-    'normalizing': ['$Parse'],
+    'difference': ['$Compare'],
+    'confuse': ['$Compare'],
     'normalize': ['$Parse'],
     'flatten': ['$Parse'],
     'parse': ['$Parse'],
     'assign': ['$Assign'],
     'assignment': ['$Assign'],
-    'assigning': ['$Assign'],
     'indexing': ['$Assign', '$Index'],
     'reorder': ['$Sort'],
     'reordering': ['$Sort'],
@@ -359,23 +366,21 @@ STRING2PREDICATE = {
     'order': ['$Sort'],
     'contain': ['$Contain'],
     'match': ['$Match'],
-    'matched': ['$Match'],
     'matchable': ['$Match'],
-    'matches': ['$Match'],
-    'matching': ['$Match'],
     'move': ['$Replace'],
     'change': ['$Replace'],
-    'changing': ['$Replace'],
     'replace': ['$Replace'],
     # 'replacement': ['$Replace'],
     'substitute': ['$Replace'],
+    'fix': ['$Replace'],
     'swap': ['$Replace'],
-    'flipping': ['$Replace'],
     'rotate': ['$Replace'],
     'modify': ['$Replace'],
     'switch': ['$Replace'],
     'uniqify': ['$Replace'],
     'shift': ['$Replace'],
+    'override': ['$Replace'],
+    'shuffle': ['$Replace'],
 
     # Conditions
     'exist': ['$Exist'],
@@ -479,6 +484,7 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
 
     # Prepositions
     $In => PP/NP {\\x.'@In'(x)}
+    $In => (NP\\NP)/NP {\\x y.'@In'(x, y)}
     $In => (NP/NP)\\NP {\\x y. '@In'(x, y)}
 
     $Into => PP/NP {\\x.'@Into'(x)}
@@ -496,10 +502,9 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $For => PP/NP {\\x.'@For'(x)}
     $For => (NP/NP)\\NP {\\x y.'@For'(x, y)}
     $From => PP/NP {\\x.'@From'(x)}
+    $From => PP/S {\\x.'@From'(x)}
     $From => (NP/NP)\\NP {\\x y.'@From'(x, y)}
-    # $From => (PP/NP)/NP {\\x y.'@From'(x, y)}
     $With => PP/NP {\\x.'@With'(x)}
-    # $With => S/NP {\\x.'@With'(x)} # For sentence that start with using
     $With => (NP/NP)\\NP {\\x y. '@With'(x, y)}
     $As => PP/NP {\\x. '@As'(x)}
     $As => (NP/NP)\\NP {\\x y.'@As'(x, y)}
@@ -529,16 +534,18 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Return => (S/NP)/PP {\\y x.'@Return'('@Desc'(x), y)}
     $Return => (S/NP)/NP {\\y x.'@Return'('@Desc'(x), y)}
 
-    $Transform => (S/NP)/NP {\\x y.'@Transform'(x, y)}.
-    $Merge => NP {'Merge'}
+    $Transform => S/NP {\\x. '@Transform'(x)}
+    $Transform => S/PP {\\x. '@Transform'(x)}
+    $Transform => (S/NP)/PP {\\y x. '@Transform'('@Desc'(x), y)}
+    $Transform => (S/NP)/NP {\\y x. '@Transform'('@Desc'(x), y)}
+
     $Merge => S/NP {\\x. '@Merge'(x)}
     $Merge => (S/NP)/PP {\\y x. '@Merge'('@Desc'(x), y)}
 
-    $Iterate => NP {'Iterator'}
     $Iterate => S/PP {\\x. '@Iterate'(x)}
     $Iterate => (S/NP)/PP {\\y x. '@Iterate'('@Desc'(x), y)}
+    $Iterate => (S/NP)/NP {\\y x. '@Iterate'('@Desc'(x), y)}
 
-    $Sort => NP {'Order'}
     $Sort => S/NP {\\x. '@Sort'(x)}
     $Sort => S/PP {\\x. '@Sort'(x)}
     $Sort => (S/NP)/PP {\\y x. '@Sort'('@Desc'(x), y)}
@@ -553,6 +560,7 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Split => (S/NP)/PP {\\y x. '@Split'('@Desc'(x), y)}
 
     $Round => S/NP {\\x. '@Round'(x)}
+    $Round => S/PP {\\x. '@Round'(x)}
     $Round => (S/NP)/PP {\\y x. '@Round'('@Desc'(x), y)}
 
     $Convert => S/PP {\\x. '@Convert'(x)}
@@ -560,8 +568,8 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Convert => (S/NP)/PP {\\y x. '@Convert'('@Desc'(x), y)}
     $Convert => (S/NP)/NP {\\y x. '@Convert'('@Desc'(x), y)}
 
-    $Add => NP {'Add'}
     $Add => S/NP {\\x. '@Add'(x)}
+    $Add => S/PP {\\x. '@Add'(x)}
     $Add => S\\NP {\\x. '@Add'(x)}
     $Add => (S/NP)/PP {\\y x. '@Add'('@Desc'(x), y)}
     $Add => (S/NP)/NP {\\y x. '@Add'('@Desc'(x), y)}
@@ -582,18 +590,15 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Load => (S/NP)/PP {\\y x. '@Load'('@Desc'(x), y)}
     $Load => (S/NP)/NP {\\y x. '@Load'('@Desc'(x), y)}
 
-    $Save => NP {'Save'}
     $Save => S/NP {\\x. '@Save'(x)}
     $Save => S/PP {\\x. '@Save'(x)}
     $Save => (S/NP)/PP {\\y x. '@Save'('@Desc'(x), y)}
     $Save => (S/NP)/NP {\\y x. '@Save'('@Desc'(x), y)}
 
-    $Print => NP {'Print'}
     $Print => S/NP {\\x. '@Print'(x)}
     $Print => (S/NP)/PP {\\y x. '@Print'('@Desc'(x), y)}
     $Print => (S/NP)/NP {\\y x. '@Print'('@Desc'(x), y)}
 
-    $Append => NP {'Append'}
     $Append => S/NP {\\x. '@Append'(x)}
     $Append => S/PP {\\x. '@Append'(x)}
     $Append => (S/NP)/PP {\\y x. '@Append'('@Desc'(x), y)}
@@ -603,7 +608,6 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
 
     $Continue => S/NP {\\x. '@Continue'(x)}
 
-    $Compare => NP {'Check'} #if compare is not used as NP, will use this
     $Compare => S/NP {\\x. '@Compare'(x)}
     $Compare => S/PP {\\x. '@Compare'(x)}
     $Compare => (S/NP)/PP {\\y x. '@Compare'('@Desc'(x), y)}
@@ -611,18 +615,18 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
 
     $Parse => S/NP {\\x. '@Parse'(x)}
     $Parse => (S/NP)/PP {\\y x. '@Parse'('@Desc'(x), y)}
+    $Parse => (S/NP)/NP {\\y x. '@Parse'('@Desc'(x), y)}
 
-    $Assign => NP {'Assignment'}
     $Assign => (S/NP)/PP {\\y x. '@Assign'('@Desc'(y), x)}
 
     $Replace => S/NP {\\x. '@Replace'(x)}
+    $Replace => S\\NP {\\x. '@Replace'(x)}
     $Replace => (S/NP)/PP {\\y x. '@Replace'('@Desc'(x), y)}
     $Replace => (S/NP)/NP {\\y x. '@Replace'('@Desc'(x), y)}
 
     $Contain => NP/NP {\\x. '@Contain'(x)} # as it is used with other verbs
     $Contain => (S/NP)/PP {\\y x. '@Contain'('@Desc'(x), y)}
 
-    $Match => NP {'Match'}
     $Match => S/NP {\\x. '@Match'(x)}
     $Match => (S/NP)/PP {\\y x. '@Match'('@Desc'(x), y)}
 '''

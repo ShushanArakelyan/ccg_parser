@@ -2,12 +2,15 @@ import copy
 import logging
 import signal
 import string
+import os
 
 import nltk
 import numpy as np
 from nltk.ccg import chart, lexicon
 from nltk.corpus import wordnet
 from nltk.stem import WordNetLemmatizer
+from nltk.tag.stanford import StanfordPOSTagger
+
 from spacy.lang.en import English
 from spacy.tokenizer import Tokenizer
 
@@ -53,10 +56,25 @@ TAGS_OF_INTEREST = ['NP', 'VP', 'PP',
                     'NN', 'NNS', 'NNP', 'NNPS', 'PRP', 'PRP$',
                     'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
 
+
+def connect_tagger(java_path):
+    """
+    Connects to the model of tagger by the provided java path.
+    Download the model from here 'https://nlp.stanford.edu/software/tagger.html'.
+    """
+    os.environ["JAVAHOME"] = java_path
+
+    jar = "/home/asus/stanford-tagger-4.2.0/stanford-postagger.jar"
+    model = "/home/asus/stanford-tagger-4.2.0/models/english-bidirectional-distsim.tagger"
+
+    return StanfordPOSTagger(model, jar, encoding="utf-8")
+
+
 nlp = English()
 tokenizer = Tokenizer(nlp.vocab)
 
 logger = logging.getLogger(__name__)
+POS_TAGGER = connect_tagger("/usr/java/jre1.8.0_281")
 
 
 def get_wordnet_pos(treebank_tag):
@@ -64,7 +82,11 @@ def get_wordnet_pos(treebank_tag):
     if treebank_tag.startswith('J'):
         return wordnet.ADJ
     elif treebank_tag.startswith('V'):
-        return wordnet.VERB
+        # to handle multiple verbs in a sentence
+        if treebank_tag == 'VB':
+            return wordnet.VERB
+        else:
+            return wordnet.NOUN
     elif treebank_tag.startswith('N'):
         return wordnet.NOUN
     elif treebank_tag.startswith('R'):
@@ -114,6 +136,41 @@ def preprocess_sent(sentence):
     return ret_sentences
 
 
+def add_verb(word):
+    """
+    Adds the given word to the vocabulary of predicates.
+    """
+    verb_predicate = ["$Transform"]
+    STRING2PREDICATE.update({word: verb_predicate})
+
+
+def add_noun(word):
+    """
+    Makes the given noun a predicate and add rules for it.
+    """
+    predicate = "$" + word
+    # rules for noun phrases
+    rules = predicate + "  => N {'" + word + "'}\n"
+    rules += predicate + "  => NP {'" + word + "'}\n"
+    rules += predicate + \
+        "  => NP/NP {\\x. '@Concat'('" + word + "', x)}\n"
+    rules += predicate + \
+        " => S/S {\\F. F('@Desc'('" + word + "'))}\n"
+    return predicate, rules
+
+
+def add_get(sentence, pos_tags):
+    """
+    For the sentences that don't have verbs in them,
+    adds $Load at the begining of the sentence.
+    """
+    exists = [np.any(pos == 'v') for pos in pos_tags]
+    verb_to_add = ['$Load']
+    if not np.any(exists):
+        sentence = [verb_to_add + sentence[0]]
+    return sentence
+
+
 def string_to_predicate(s, pos):
     """input: one string (can contain multiple tokens with ;
     output: a list of predicates."""
@@ -139,16 +196,14 @@ def string_to_predicate(s, pos):
         if pos:
             lemmatizer = WordNetLemmatizer()
             lemma_form = lemmatizer.lemmatize(s, pos)
+            if pos == 'v':
+                # adds unknown verbs to the vocabulary
+                add_verb(lemma_form)
+
             if lemma_form in STRING2PREDICATE:
                 return STRING2PREDICATE[lemma_form], new_rules
-        new_predicate = "$" + s
-        # rules for noun phrases
-        new_rules = new_predicate + "  => N {'" + s + "'}\n"
-        new_rules += new_predicate + "  => NP {'" + s + "'}\n"
-        new_rules += new_predicate + \
-            "  => NP/NP {\\x. '@Concat'('" + s + "', x)}\n"
-        new_rules += new_predicate + \
-            " => S/S {\\F. F('@Desc'('" + s + "'))}\n"
+
+        new_predicate, new_rules = add_noun(s)
         # TODO add separate rules for verbs
         return [new_predicate], new_rules
 
@@ -158,7 +213,8 @@ def tokenize(sentence, allow_phrases=False):
     output: a list of possible tokenization of the sentence;
     each token can be mapped to multiple predicates"""
     # log[j] is a list containing temporary results using 0..(j-1) tokens
-    pos_tags = [get_wordnet_pos(pair[1]) for pair in nltk.pos_tag(sentence)]
+    pos_tags = [get_wordnet_pos(tag[1]) for tag in POS_TAGGER.tag(sentence)]
+
     assert len(pos_tags) == len(sentence)
     log = {i: [] for i in range(len(sentence) + 1)}
     log[0] = [[]]
@@ -177,7 +233,10 @@ def tokenize(sentence, allow_phrases=False):
                     log[i + _range].append(temp_result + [predicate])
             if token.startswith("\""):  # avoid --"A" and "B"-- treated as one predicate
                 break
-    return log[len(sentence)], new_lexicon
+
+    # adds verb if the sentence doesn't have it
+    sentence = add_get(log[len(sentence)], pos_tags)
+    return sentence, new_lexicon
 
 
 def get_word_name(layer, st, idx):
@@ -261,7 +320,7 @@ def remove_in_python(sentence):
         if index + 2 >= len(sentence):
             sentence = sentence[:index]
         else:
-            #for numerical values that come after python
+            # for numerical values that come after python
             if sentence[index + 2].isnumeric():
                 sentence = sentence[:index + 1] + sentence[index + 2:]
             sentence = sentence[:index] + sentence[index + 2:]
@@ -280,8 +339,10 @@ def parse_sentence(sentence, time_limit=10):
     """
     split_sentence = remove_punctuation(sentence).split()
     split_sentence = remove_in_python(split_sentence)
+    split_sentence = remove_specific_word(split_sentence)
     split_sentence = remove_question_words(split_sentence)
     ts, new_lexicon = tokenize(split_sentence)
+
     if DEBUG:
         print(ts)
 
@@ -317,8 +378,8 @@ def example(sentence):
     sentence = remove_specific_word(sentence)
     sentence = remove_question_words(sentence)
     ts, new_lexicon = tokenize(sentence)
-    # ts = tokenize("find the list".split(' '))
 
+    # ts = tokenize("find the list".split(' '))
     # ts = tokenize("find the index of an item in a list".split(' '))
     # ts = tokenize("find intersection of nested lists".split(' '))
     # ts = tokenize("round 123 to 100 instead of 100.0.split(' ')) # nltk.sem.logic.LogicalExpressionException: Unexpected token: '.' 100.0'
@@ -345,10 +406,8 @@ if __name__ == "__main__":
     # First time running will require downloading following nltk datasets
     # nltk.download('wordnet')
     # nltk.download('averaged_perceptron_tagger')
-
     import time
-
     s = time.time()
     # chart.printCCGDerivation(parse_sentence('how to find the index of a value in 2d array in python?'))
-    example("how to get tuples from lists using list comprehension in python ")
+    parse_sentence("sorting a dictionary by a key")
     print("elapsed: ", time.time() - s)
