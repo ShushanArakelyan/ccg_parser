@@ -1,16 +1,15 @@
 import copy
 import logging
+import os
 import signal
 import string
-import os
 
-import nltk
 import numpy as np
+import stanza
 from nltk.ccg import chart, lexicon
 from nltk.corpus import wordnet
 from nltk.stem import WordNetLemmatizer
 from nltk.tag.stanford import StanfordPOSTagger
-
 from spacy.lang.en import English
 from spacy.tokenizer import Tokenizer
 
@@ -74,7 +73,11 @@ nlp = English()
 tokenizer = Tokenizer(nlp.vocab)
 
 logger = logging.getLogger(__name__)
-POS_TAGGER = connect_tagger("/usr/java/jre1.8.0_281")
+
+POS_TAGGER = stanza.Pipeline(lang='en', processors='tokenize,mwt,pos', tokenize_pretokenized=True)
+
+
+# POS_TAGGER = connect_tagger("/usr/java/jre1.8.0_281")
 
 
 def get_wordnet_pos(treebank_tag):
@@ -138,10 +141,14 @@ def preprocess_sent(sentence):
 
 def add_verb(word):
     """
-    Adds the given word to the vocabulary of predicates.
+    Makes the given verb a predicate and add rules for it.
     """
-    verb_predicate = ["$Transform"]
-    STRING2PREDICATE.update({word: verb_predicate})
+    predicate = "$" + word
+    rules = predicate + " => S/NP {\\x. '@Action'('" + word + "', x)}\n"
+    rules += predicate + " => S/PP {\\x. '@Action'('" + word + "', x)}\n"
+    rules += predicate + " => (S/NP)/PP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    rules += predicate + " => (S/NP)/NP {\\y x. '@Action'(" + word + ", x, y)}\n"
+    return predicate, rules
 
 
 def add_noun(word):
@@ -149,13 +156,10 @@ def add_noun(word):
     Makes the given noun a predicate and add rules for it.
     """
     predicate = "$" + word
-    # rules for noun phrases
-    rules = predicate + "  => N {'" + word + "'}\n"
-    rules += predicate + "  => NP {'" + word + "'}\n"
-    rules += predicate + \
-        "  => NP/NP {\\x. '@Concat'('" + word + "', x)}\n"
-    rules += predicate + \
-        " => S/S {\\F. F('@Desc'('" + word + "'))}\n"
+    rules = predicate + " => N {'" + word + "'}\n"
+    rules += predicate + " => NP {'" + word + "'}\n"
+    rules += predicate + " => NP/NP {\\x. '@Concat'('" + word + "', x)}\n"
+    rules += predicate + " => S/S {\\F. F('@Concat'('" + word + "'))}\n"
     return predicate, rules
 
 
@@ -164,7 +168,7 @@ def add_get(sentence, pos_tags):
     For the sentences that don't have verbs in them,
     adds $Load at the begining of the sentence.
     """
-    exists = [np.any(pos == 'v') for pos in pos_tags]
+    exists = [np.any(pos.startswith("V")) for pos in pos_tags]
     verb_to_add = ['$Load']
     if not np.any(exists):
         sentence = [verb_to_add + sentence[0]]
@@ -195,16 +199,13 @@ def string_to_predicate(s, pos):
     else:
         if pos:
             lemmatizer = WordNetLemmatizer()
-            lemma_form = lemmatizer.lemmatize(s, pos)
-            if pos == 'v':
-                # adds unknown verbs to the vocabulary
-                add_verb(lemma_form)
-
+            lemma_form = lemmatizer.lemmatize(s, get_wordnet_pos(pos))
             if lemma_form in STRING2PREDICATE:
                 return STRING2PREDICATE[lemma_form], new_rules
-
-        new_predicate, new_rules = add_noun(s)
-        # TODO add separate rules for verbs
+            if pos.startswith("V"):
+                new_predicate, new_rules = add_verb(lemma_form)
+            else:
+                new_predicate, new_rules = add_noun(lemma_form)
         return [new_predicate], new_rules
 
 
@@ -213,7 +214,8 @@ def tokenize(sentence, allow_phrases=False):
     output: a list of possible tokenization of the sentence;
     each token can be mapped to multiple predicates"""
     # log[j] is a list containing temporary results using 0..(j-1) tokens
-    pos_tags = [get_wordnet_pos(tag[1]) for tag in POS_TAGGER.tag(sentence)]
+    pos_tags = [w.xpos for w in POS_TAGGER([sentence]).sentences[0].words]
+    print(pos_tags)
 
     assert len(pos_tags) == len(sentence)
     log = {i: [] for i in range(len(sentence) + 1)}
@@ -337,6 +339,7 @@ def parse_sentence(sentence, time_limit=10):
     time_limit: if a positive number, TimeoutError will be thrown if parsing is not finished after time_limit seconds
     returns: a single parse tree
     """
+    sentence = sentence.lower()
     split_sentence = remove_punctuation(sentence).split()
     split_sentence = remove_in_python(split_sentence)
     split_sentence = remove_specific_word(split_sentence)
@@ -406,6 +409,7 @@ if __name__ == "__main__":
     # First time running will require downloading following nltk datasets
     # nltk.download('wordnet')
     # nltk.download('averaged_perceptron_tagger')
+    # stanza.download('en')
     import time
     s = time.time()
     # chart.printCCGDerivation(parse_sentence('how to find the index of a value in 2d array in python?'))
