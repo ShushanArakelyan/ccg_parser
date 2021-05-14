@@ -524,110 +524,101 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
 
     $But => var\\.,var/.,var {\\y x.'@But'(x,y)}
 
-    $Find => S/NP {\\x.'@Find'(x)}
-    $Find => (S/NP)/PP {\\y x.'@Find'(x, y)}
-    $Find => (S/NP)/NP {\\y x.'@Find'(x, y)}
+    $Find => S/NP {\\x.'@Action'('Find', x)}
+    $Find => (S/NP)/PP {\\y x.'@Action'('Find', x, y)}
+    $Find => (S/NP)/NP {\\y x.'@Action'('Find', x, y)}
 
-    $Return => NP/NP {\\x.'@Return'(x)}
-    $Return => S/NP {\\x.'@Return'(x)}
-    $Return => (S/NP)/PP {\\y x.'@Return'(x, y)}
-    $Return => (S/NP)/NP {\\y x.'@Return'(x, y)}
+    $Return => S/NP {\\x.'@Action'('Return', x)}
+    $Return => (S/NP)/PP {\\y x.'@Action'('Return', x, y)}
+    $Return => (S/NP)/NP {\\y x.'@Action'('Return', x, y)}
 
-    $Transform => S/NP {\\x. '@Transform'(x)}
-    $Transform => S/PP {\\x. '@Transform'(x)}
-    $Transform => (S/NP)/PP {\\y x. '@Transform'(x, y)}
-    $Transform => (S/NP)/NP {\\y x. '@Transform'(x, y)}
+    $Iterate => S/PP {\\x. '@Action'('Iterate', x)}
+    $Iterate => (S/NP)/PP {\\y x. '@Action'('Iterate', x, y)}
+    $Iterate => (S/NP)/NP {\\y x. '@Action'('Iterate', x, y)}
 
-    $Merge => S/NP {\\x. '@Merge'(x)}
-    $Merge => (S/NP)/PP {\\y x. '@Merge'(x, y)}
+    $Sort => S/NP {\\x. '@Action'('Sort', x)}
+    $Sort => S/PP {\\x. '@Action'('Sort', x)}
+    $Sort => (S/NP)/PP {\\y x. '@Action'('Sort', x, y)}
+    $Sort => (S/NP)/NP {\\y x. '@Action'('Sort', x, y)}
 
-    $Iterate => S/PP {\\x. '@Iterate'(x)}
-    $Iterate => (S/NP)/PP {\\y x. '@Iterate'('@Desc'(x), y)}
-    $Iterate => (S/NP)/NP {\\y x. '@Iterate'('@Desc'(x), y)}
+    $Concatenate => S/NP {\\x. '@Action'('Concatenate', x)} # can be also Merge
+    $Concatenate => (S/NP)/PP  {\\x y. '@Action'('Concatenate', x, y)} # can be also Merge
+    $Concatenate => (S/NP)/NP  {\\x y. ''@Action'('Concatenate', x, y)} # can be also Merge
 
-    $Sort => S/NP {\\x. '@Sort'(x)}
-    $Sort => S/PP {\\x. '@Sort'(x)}
-    $Sort => (S/NP)/PP {\\y x. '@Sort'('@Desc'(x), y)}
-    $Sort => (S/NP)/NP {\\y x. '@Sort'('@Desc'(x), y)}
+    $Split => S/NP {\\x. '@Action'('Split', x)}
+    $Split => S\\NP {\\x. '@Action'('Split', x)}
+    $Split => (S/NP)/PP {\\y x. '@Action'('Split', x, y)}
 
-    $Concatenate => S/NP {\\x. '@Concatenate'(x)} # can be also Merge
-    $Concatenate => (S/NP)/PP  {\\x y. '@Concatenate'(x, y)} # can be also Merge
-    $Concatenate => (S/NP)/NP  {\\x y. '@Concatenate'(x, y)} # can be also Merge
+    $Round => S/NP {\\x. '@Action'('Round', x)}
+    $Round => S/PP {\\x. '@Action'('Round', x)}
+    $Round => (S/NP)/PP {\\y x. '@Action'('Round', x, y)}
 
-    $Split => S/NP {\\x. '@Split'(x)}
-    $Split => S\\NP {\\x. '@Split'(x)}
-    $Split => (S/NP)/PP {\\y x. '@Split'(x, y)}
+    $Convert => S/PP {\\x. '@Action'('Convert', x)}
+    $Convert => S/NP {\\x. '@Action'('Convert', x)}
+    $Convert => (S/NP)/PP {\\y x. '@Action'('Convert', x, y)}
+    $Convert => (S/NP)/NP {\\y x. '@Action'('Convert', x, y)}
 
-    $Round => S/NP {\\x. '@Round'(x)}
-    $Round => S/PP {\\x. '@Round'(x)}
-    $Round => (S/NP)/PP {\\y x. '@Round'(x, y)}
+    $Add => S/NP {\\x. '@Action'('Add', x)}
+    $Add => S/PP {\\x. '@Action'('Add', x)}
+    $Add => S\\NP {\\x. '@Action'('Add', x)}
+    $Add => (S/NP)/PP {\\y x. '@Action'('Add', x, y)}
+    $Add => (S/NP)/NP {\\y x. '@Action'('Add', x, y)}
 
-    $Convert => S/PP {\\x. '@Convert'(x)}
-    $Convert => S/NP {\\x. '@Convert'(x)}
-    $Convert => (S/NP)/PP {\\y x. '@Convert'(x, y)}
-    $Convert => (S/NP)/NP {\\y x. '@Convert'(x, y)}
+    $Remove => S/NP {\\x. '@Action'('Remove', x)}
+    $Remove => (S/NP)/PP {\\y x. '@Action'('Remove', x, y)}
+    $Remove => (S/NP)/NP {\\y x. '@Action'('Remove', x, y)}
 
-    $Add => S/NP {\\x. '@Add'(x)}
-    $Add => S/PP {\\x. '@Add'(x)}
-    $Add => S\\NP {\\x. '@Add'(x)}
-    $Add => (S/NP)/PP {\\y x. '@Add'(x, y)}
-    $Add => (S/NP)/NP {\\y x. '@Add'(x, y)}
+    $Map => (S/NP)/PP {\\y x. '@Action'('Map', x, y)}
 
-    $Remove => S/NP {\\x. '@Remove'(x)}
-    $Remove => (S/NP)/PP {\\y x. '@Remove'(x, y)}
-    $Remove => (S/NP)/NP {\\y x. '@Remove'(x, y)}
+    $Create => NP/NP {\\x. '@Action'('Create', x)}
+    $Create => S/NP {\\x. '@Action'('Create', x)}
+    $Create => (S/NP)/PP {\\y x. '@Action'('Create', x, y)}
+    $Create => (S/NP)/NP {\\y x. '@Action'('Create', x, y)}
 
-    $Map => (S/NP)/PP {\\y x. '@Map'(x, y)}
+    $Load => S/NP {\\x. '@Action'('Load', x)}
+    $Load => S/PP {\\x. '@Action'('Load', x)}
+    $Load => (S/NP)/PP {\\y x. '@Action'('Load', x, y)}
+    $Load => (S/NP)/NP {\\y x. '@Action'('Load', x, y)}
 
-    $Create => NP/NP {\\x.'@Create'(x)}
-    $Create => S/NP {\\x. '@Create'(x)}
-    $Create => (S/NP)/PP {\\y x. '@Create'(x, y)}
-    $Create => (S/NP)/NP {\\y x. '@Create'(x, y)}
+    $Save => S/NP {\\x. '@Action'('Save', x)}
+    $Save => S/PP {\\x. '@Action'('Save', x)}
+    $Save => (S/NP)/PP {\\y x. '@Action'('Save', x, y)}
+    $Save => (S/NP)/NP {\\y x. '@Action'('Save', x, y)}
 
-    $Load => S/NP {\\x. '@Load'(x)}
-    $Load => S/PP {\\x. '@Load'(x)}
-    $Load => (S/NP)/PP {\\y x. '@Load'(x, y)}
-    $Load => (S/NP)/NP {\\y x. '@Load'(x, y)}
+    $Print => S/NP {\\x. '@Action'('Print', x)}
+    $Print => (S/NP)/PP {\\y x. '@Action'('Print', x, y)}
+    $Print => (S/NP)/NP {\\y x. '@Action'('Print', x, y)}
 
-    $Save => S/NP {\\x. '@Save'(x)}
-    $Save => S/PP {\\x. '@Save'(x)}
-    $Save => (S/NP)/PP {\\y x. '@Save'(x, y)}
-    $Save => (S/NP)/NP {\\y x. '@Save'(x, y)}
-
-    $Print => S/NP {\\x. '@Print'(x)}
-    $Print => (S/NP)/PP {\\y x. '@Print'(x, y)}
-    $Print => (S/NP)/NP {\\y x. '@Print'(x, y)}
-
-    $Append => S/NP {\\x. '@Append'(x)}
-    $Append => S/PP {\\x. '@Append'(x)}
-    $Append => (S/NP)/PP {\\y x. '@Append'(x, y)}
+    $Append => S/NP {\\x. '@Action'('Append', x)}
+    $Append => S/PP {\\x. '@Action'('Append', x)}
+    $Append => (S/NP)/PP {\\y x. '@Action'('Append', x, y)}
 
     $Break => NP {'Break'}
-    $Break => (S/NP)/PP {\\y x. '@Break'(x, y)}
+    $Break => (S/NP)/PP {\\y x. '@Action'('Break', x, y)}
 
-    $Continue => S/NP {\\x. '@Continue'(x)}
+    $Continue => S/NP {\\x. '@Action'('Continue', x)}
 
-    $Compare => S/NP {\\x. '@Compare'(x)}
-    $Compare => S/PP {\\x. '@Compare'(x)}
-    $Compare => (S/NP)/PP {\\y x. '@Compare'(x, y)}
-    $Compare => (S/NP)/NP {\\y x. '@Compare'(x, y)}
+    $Compare => S/NP {\\x. '@Action'('Compare', x)}
+    $Compare => S/PP {\\x. '@Action'('Compare', x)}
+    $Compare => (S/NP)/PP {\\y x. '@Action'('Compare', x, y)}
+    $Compare => (S/NP)/NP {\\y x. '@Action'('Compare', x, y)}
 
-    $Parse => S/NP {\\x. '@Parse'(x)}
-    $Parse => (S/NP)/PP {\\y x. '@Parse'(x, y)}
-    $Parse => (S/NP)/NP {\\y x. '@Parse'(x, y)}
+    $Parse => S/NP {\\x. '@Action'('Parse', x)}
+    $Parse => (S/NP)/PP {\\y x. '@Action'('Parse', x, y)}
+    $Parse => (S/NP)/NP {\\y x. '@Action'('Parse', x, y)}
 
-    $Assign => (S/NP)/PP {\\y x. '@Assign'(x, y)}
+    $Assign => (S/NP)/PP {\\y x. '@Action'('Assign', x, y)}
 
-    $Replace => S/NP {\\x. '@Replace'(x)}
-    $Replace => S\\NP {\\x. '@Replace'(x)}
-    $Replace => (S/NP)/PP {\\y x. '@Replace'(x, y)}
-    $Replace => (S/NP)/NP {\\y x. '@Replace'(x, y)}
+    $Replace => S/NP {\\x. '@Action'('Replace', x)}
+    $Replace => S\\NP {\\x. '@Action'('Replace', x)}
+    $Replace => (S/NP)/PP {\\y x. '@Action'('Replace', x, y)}
+    $Replace => (S/NP)/NP {\\y x. '@Action'('Replace', x, y)}
 
-    $Contain => NP/NP {\\x. '@Contain'(x)} # as it is used with other verbs
-    $Contain => (S/NP)/PP {\\y x. '@Contain'(x, y)}
+    $Contain => NP/NP {\\x. '@Action'('Contain', x)} # as it is used with other verbs
+    $Contain => (S/NP)/PP {\\y x. '@Action'('Contain', x, y)}
 
-    $Match => S/NP {\\x. '@Match'(x)}
-    $Match => (S/NP)/PP {\\y x. '@Match'(x, y)}
+    $Match => S/NP {\\x. '@Action'('Match', x)}
+    $Match => (S/NP)/PP {\\y x. '@Action'('Match', x, y)}
 '''
 
 QUESTION_WORDS = [
