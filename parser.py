@@ -51,34 +51,12 @@ NER_DICT = {
 
 VAR_NAMES = ['X', 'Y', 'Z', 'Answer']
 
-TAGS_OF_INTEREST = ['NP', 'VP', 'PP',
-                    'NN', 'NNS', 'NNP', 'NNPS', 'PRP', 'PRP$',
-                    'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
-
-
-def connect_tagger(java_path):
-    """
-    Connects to the model of tagger by the provided java path.
-    Download the model from here 'https://nlp.stanford.edu/software/tagger.html'.
-    """
-    os.environ["JAVAHOME"] = java_path
-
-    jar = "/home/asus/stanford-tagger-4.2.0/stanford-postagger.jar"
-    model = "/home/asus/stanford-tagger-4.2.0/models/english-bidirectional-distsim.tagger"
-
-    return StanfordPOSTagger(model, jar, encoding="utf-8")
-
-
 nlp = English()
 tokenizer = Tokenizer(nlp.vocab)
 
 logger = logging.getLogger(__name__)
 
-POS_TAGGER = stanza.Pipeline(lang='en', processors='tokenize,mwt,pos', tokenize_pretokenized=True)
-
-
-# POS_TAGGER = connect_tagger("/usr/java/jre1.8.0_281")
-
+POS_TAGGER = stanza.Pipeline(lang='en', processors='tokenize,pos', tokenize_pretokenized=True)
 
 def get_wordnet_pos(treebank_tag):
     '''Convert from Treebank POS tags to Wordnet POS tags'''
@@ -86,16 +64,17 @@ def get_wordnet_pos(treebank_tag):
         return wordnet.ADJ
     elif treebank_tag.startswith('V'):
         # to handle multiple verbs in a sentence
-        if treebank_tag == 'VB':
-            return wordnet.VERB
-        else:
-            return wordnet.NOUN
+        # if treebank_tag == 'VB':
+        #     return wordnet.VERB
+        # else:
+        #     return wordnet.NOUN
+        return wordnet.VERB
     elif treebank_tag.startswith('N'):
         return wordnet.NOUN
     elif treebank_tag.startswith('R'):
         return wordnet.ADV
     else:
-        return ''
+        return wordnet.NOUN
 
 
 def fill_whitespace_in_quote(sentence):
@@ -148,6 +127,10 @@ def add_verb(word):
     rules += predicate + " => S/PP {\\x. '@Action'('" + word + "', x)}\n"
     rules += predicate + " => (S/NP)/PP {\\y x. '@Action'('" + word + "', x, y)}\n"
     rules += predicate + " => (S/NP)/NP {\\y x. '@Action'(" + word + ", x, y)}\n"
+    # rules += predicate + " => S/VP {\\x. '@Action'('" + word + "', x)}\n"
+    # rules += predicate + " => (S/VP)/PP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    rules += predicate + " => (S/NP)/VP {\\y x. '@Action'(" + word + ", x, y)}\n"
+    # rules += predicate + " => (S/VP)/NP {\\y x. '@Action'(" + word + ", x, y)}\n"
     return predicate, rules
 
 
@@ -159,6 +142,9 @@ def add_noun(word):
     rules = predicate + " => N {'" + word + "'}\n"
     rules += predicate + " => NP {'" + word + "'}\n"
     rules += predicate + " => NP/NP {\\x. '@Concat'('" + word + "', x)}\n"
+    # rules += predicate + " => NP\\NP {\\x. '@Concat'('" + word + "', x)}\n"
+    rules += predicate + " => NP/VP {\\x. '@Concat'('" + word + "', x)}\n"
+    rules += predicate + " => NP/PP {\\x. '@Concat'('" + word + "', x)}\n"
     rules += predicate + " => S/S {\\F. F('@Concat'('" + word + "'))}\n"
     return predicate, rules
 
@@ -179,7 +165,6 @@ def string_to_predicate(s, pos):
     """input: one string (can contain multiple tokens with ;
     output: a list of predicates."""
     new_rules = ""
-
     if s != ',' and s not in REVERSE_SPECIAL_CHARS:
         s = s.lower().strip(',')
     if s.startswith("$"):
@@ -187,6 +172,11 @@ def string_to_predicate(s, pos):
     elif s.startswith("\"") and s.endswith("\""):
         return ["'" + s[1:-1] + "'"], new_rules
     elif s in STRING2PREDICATE:
+        if s == 'to':
+            if pos == "TO":
+                return ["$To_verb"], new_rules
+            elif pos == "IN":
+                return ["$To"], new_rules
         return STRING2PREDICATE[s], new_rules
     elif s.isdigit():
         return ["'" + s + "'"], new_rules
@@ -201,6 +191,7 @@ def string_to_predicate(s, pos):
             lemmatizer = WordNetLemmatizer()
             lemma_form = lemmatizer.lemmatize(s, get_wordnet_pos(pos))
             if lemma_form in STRING2PREDICATE:
+                # if pos == "VBG" or pos == "VBD":
                 return STRING2PREDICATE[lemma_form], new_rules
             if pos.startswith("V"):
                 new_predicate, new_rules = add_verb(lemma_form)
@@ -278,9 +269,6 @@ def quote_word_lexicon(sentence):
     ret = ""
     for token in sentence:
         if is_quote_word(token):
-            # ret += get_entry(token, 'NP', token)
-            # ret += get_entry(token, 'N', token)
-            # ret += get_entry(token, 'NP', "'@In'({},'all')".format(token))
             if token[1:-1].isdigit():
                 ret += get_entry(token, 'NP', token)
                 ret += get_entry(token, 'N', token)
@@ -288,8 +276,6 @@ def quote_word_lexicon(sentence):
                                  "\\x.'@Num'({},x)".format(token))
                 ret += get_entry(token, 'N/N',
                                  "\\x.'@Num'({},x)".format(token))
-                # ret += get_entry(token, 'PP/PP/NP/NP', "\\x y F.'@WordCount'('@Num'({},x),y,F)".format(token))
-                # ret += get_entry(token, 'PP/PP/N/N', "\\x y F.'@WordCount'('@Num'({},x),y,F)".format(token))
 
     return ret
 
@@ -332,6 +318,40 @@ def remove_in_python(sentence):
 
 def remove_specific_word(sentence, word='python'):
     return list(filter((word).__ne__, sentence))
+
+
+def getCCGParse(lwidth, tree):
+    from nltk.tree import Tree
+    rwidth = lwidth
+
+    # Is a leaf (word).
+    # Increment the span by the space occupied by the leaf.
+    if not isinstance(tree, Tree):
+        return 2 + lwidth + len(tree)
+
+    # Find the width of the current derivation step
+    for child in tree:
+        rwidth = max(rwidth, getCCGParse(rwidth, child))
+
+    # Is a leaf node.
+    # Don't print anything, but account for the space occupied.
+    if not isinstance(tree.label(), tuple):
+        return max(
+            rwidth, 2 + lwidth +
+                    len("%s" % tree.label()), 2 + lwidth + len(tree[0])
+        )
+    (token, op) = tree.label()
+    if op == "Leaf":
+        return rwidth
+
+    # Pad to the left with spaces, followed by a sequence of '-'
+    # and the derivation rule.
+    str_res = "%s" % (token.categ())
+    if token.semantics() is not None:
+        str_res += " {" + str(token.semantics()) + "}"
+    if lwidth == 0:
+        return str_res
+    return rwidth
 
 
 def parse_sentence(sentence, time_limit=10):

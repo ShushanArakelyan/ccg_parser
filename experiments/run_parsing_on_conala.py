@@ -3,6 +3,7 @@ import os.path
 import sys
 
 import pandas as pd
+from nltk.ccg import chart
 from tqdm import tqdm
 
 from parser import parse_sentence
@@ -39,7 +40,7 @@ def parse_conala(args):
                 parse_tree = parse_sentence(q, time_limit=time_limit)
                 print('*' * 120)
                 print('{}: {}'.format(i, q))
-                # chart.printCCGDerivation(parse_tree)
+                chart.printCCGDerivation(parse_tree)
                 print('\n\n\n')
                 parsed_q_count += 1
                 sys.stdout.flush()
