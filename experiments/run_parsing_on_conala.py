@@ -5,9 +5,8 @@ import sys
 import pandas as pd
 from nltk.ccg import chart
 from tqdm import tqdm
-from nltk.ccg import chart
 
-from ccg_parser.parser import parse_sentence
+from parser import parse_sentence
 
 
 def parse_conala(args):
