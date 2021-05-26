@@ -61,6 +61,11 @@ def get_wordnet_pos(treebank_tag):
     if treebank_tag.startswith('J'):
         return wordnet.ADJ
     elif treebank_tag.startswith('V'):
+        # to handle multiple verbs in a sentence
+        # if treebank_tag == 'VB':
+        #     return wordnet.VERB
+        # else:
+        #     return wordnet.NOUN
         return wordnet.VERB
     elif treebank_tag.startswith('N'):
         return wordnet.NOUN
@@ -314,8 +319,8 @@ def remove_specific_word(sentence, word='python'):
 
 
 # this function is adapted from nltk.chart.printCCGTree
-def getCCGParse(tree):
-    def makeCCGParse(lwidth, tree):
+def get_ccg_parse(tree):
+    def make_ccg_parse(lwidth, tree):
         from nltk.tree import Tree
         nonlocal out_parse
         rwidth = lwidth
@@ -327,7 +332,7 @@ def getCCGParse(tree):
 
         # Find the width of the current derivation step
         for child in tree:
-            rwidth = max(rwidth, makeCCGParse(rwidth, child))
+            rwidth = max(rwidth, make_ccg_parse(rwidth, child))
 
         # Is a leaf node.
         # Don't print anything, but account for the space occupied.
@@ -348,7 +353,7 @@ def getCCGParse(tree):
         return rwidth
 
     out_parse = ""
-    makeCCGParse(0, tree)
+    make_ccg_parse(0, tree)
     return out_parse
 
 
@@ -423,6 +428,10 @@ def example(sentence):
         break
 
 
+def postprocess_parse(parse_str):
+    return "({})".format(parse_str.replace(",", " ").replace("'", " "))
+
+
 if __name__ == "__main__":
     # First time running will require downloading following nltk datasets
     # nltk.download('wordnet')
@@ -436,6 +445,7 @@ if __name__ == "__main__":
     # chart.printCCGDerivation(parse_sentence("returns an array of bounding boxes of human faces in a image", 100))
 
     # chart.printCCGDerivation(parse_sentence("use glob to find files recursively"))
-    tree = parse_sentence("sort list by key")
-    print(getCCGParse(tree))
+    tree = parse_sentence("find intersection of nested lists")
+    parse_str = get_ccg_parse(tree)
+    print(postprocess_parse(parse_str))
     print("elapsed: ", time.time() - s)
