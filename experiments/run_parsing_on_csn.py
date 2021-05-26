@@ -52,7 +52,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-data", dest="data", type=str, help="Location of the input file, should be jsonl",
                         required=True)
-    parser.add_argument("-output", dest="outdir", type=str, help="Name of the output file, should be jsonl",
+    parser.add_argument("-output", dest="output", type=str, help="Name of the output file, should be jsonl",
                         required=True)
     parser.add_argument("-time_limit", dest="time_limit", type=int, help="Timeout for parsing")
     parser.add_argument("-n", dest="n", type=int, help="Number of examples to parse")
