@@ -1,4 +1,5 @@
 import argparse
+import os
 
 import pandas as pd
 from tqdm import tqdm
@@ -17,6 +18,7 @@ def parse_csn(args):
         time_limit = args.time_limit
     else:
         time_limit = 100
+    assert os.path.isdir(args.logdir)
     with open(args.logdir + '/failed_queries.txt', 'w') as f_out, \
             open(args.logdir + '/exceptions.txt', 'w') as ex_out, \
             open(args.logdir + '/timeout.txt', 'w') as t_out:
@@ -56,6 +58,8 @@ if __name__ == "__main__":
                         required=True)
     parser.add_argument("-time_limit", dest="time_limit", type=int, help="Timeout for parsing")
     parser.add_argument("-n", dest="n", type=int, help="Number of examples to parse")
+    parser.add_argument("-logdir", dest="logdir", type=int,
+                        help="This directory will be used to log failed and timed out queries")
     args = parser.parse_args()
 
     parse_csn(args)
