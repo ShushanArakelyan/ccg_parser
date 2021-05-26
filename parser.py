@@ -243,6 +243,7 @@ def remove_punctuation(sentence):
     # TODO:
     # 1. handle dictionary/list, non-consuming
     # 2. python 2.6 -> python 26
+    sentence = sentence.replace('_', ' ')
     return sentence.translate(str.maketrans('', '', string.punctuation))
 
 
@@ -445,7 +446,7 @@ if __name__ == "__main__":
     # chart.printCCGDerivation(parse_sentence("returns an array of bounding boxes of human faces in a image", 100))
 
     # chart.printCCGDerivation(parse_sentence("use glob to find files recursively"))
-    tree = parse_sentence("find intersection of nested lists")
+    tree = parse_sentence("find intersection of nestedlists")
     parse_str = get_ccg_parse(tree)
     print(postprocess_parse(parse_str))
     print("elapsed: ", time.time() - s)
