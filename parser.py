@@ -204,7 +204,6 @@ def tokenize(sentence, allow_phrases=False):
     each token can be mapped to multiple predicates"""
     # log[j] is a list containing temporary results using 0..(j-1) tokens
     pos_tags = [w.xpos for w in POS_TAGGER([sentence]).sentences[0].words]
-    print(pos_tags)
 
     assert len(pos_tags) == len(sentence)
     log = {i: [] for i in range(len(sentence) + 1)}
