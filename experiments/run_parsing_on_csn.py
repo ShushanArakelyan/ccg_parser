@@ -10,7 +10,10 @@ from parser import parse_sentence, get_ccg_parse, postprocess_parse
 def parse_csn(args):
     csn = pd.read_json(args.data, lines=True)
     # "%%%" signifies empty parse
-    parses_dict = {i: "%%%" for i in range(len(csn))}
+    if args.n:
+        parses_dict = {i: "%%%" for i in range(args.n)}
+    else:
+        parses_dict = {i: "%%%" for i in range(len(csn))}
     all_q_count = 0
     parsed_q_count = 0
 
