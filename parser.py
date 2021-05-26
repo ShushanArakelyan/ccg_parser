@@ -1,6 +1,5 @@
 import copy
 import logging
-import os
 import signal
 import string
 
@@ -9,7 +8,6 @@ import stanza
 from nltk.ccg import chart, lexicon
 from nltk.corpus import wordnet
 from nltk.stem import WordNetLemmatizer
-from nltk.tag.stanford import StanfordPOSTagger
 from spacy.lang.en import English
 from spacy.tokenizer import Tokenizer
 
@@ -126,11 +124,11 @@ def add_verb(word):
     rules = predicate + " => S/NP {\\x. '@Action'('" + word + "', x)}\n"
     rules += predicate + " => S/PP {\\x. '@Action'('" + word + "', x)}\n"
     rules += predicate + " => (S/NP)/PP {\\y x. '@Action'('" + word + "', x, y)}\n"
-    rules += predicate + " => (S/NP)/NP {\\y x. '@Action'(" + word + ", x, y)}\n"
+    rules += predicate + " => (S/NP)/NP {\\y x. '@Action'('" + word + "', x, y)}\n"
     # rules += predicate + " => S/VP {\\x. '@Action'('" + word + "', x)}\n"
     # rules += predicate + " => (S/VP)/PP {\\y x. '@Action'('" + word + "', x, y)}\n"
-    rules += predicate + " => (S/NP)/VP {\\y x. '@Action'(" + word + ", x, y)}\n"
-    # rules += predicate + " => (S/VP)/NP {\\y x. '@Action'(" + word + ", x, y)}\n"
+    rules += predicate + " => (S/NP)/VP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    # rules += predicate + " => (S/VP)/NP {\\y x. '@Action'('" + word + "', x, y)}\n"
     return predicate, rules
 
 
@@ -320,38 +318,43 @@ def remove_specific_word(sentence, word='python'):
     return list(filter((word).__ne__, sentence))
 
 
-def getCCGParse(lwidth, tree):
-    from nltk.tree import Tree
-    rwidth = lwidth
+# this function is adapted from nltk.chart.printCCGTree
+def get_ccg_parse(tree):
+    def make_ccg_parse(lwidth, tree):
+        from nltk.tree import Tree
+        nonlocal out_parse
+        rwidth = lwidth
 
-    # Is a leaf (word).
-    # Increment the span by the space occupied by the leaf.
-    if not isinstance(tree, Tree):
-        return 2 + lwidth + len(tree)
+        # Is a leaf (word).
+        # Increment the span by the space occupied by the leaf.
+        if not isinstance(tree, Tree):
+            return 2 + lwidth + len(tree)
 
-    # Find the width of the current derivation step
-    for child in tree:
-        rwidth = max(rwidth, getCCGParse(rwidth, child))
+        # Find the width of the current derivation step
+        for child in tree:
+            rwidth = max(rwidth, make_ccg_parse(rwidth, child))
 
-    # Is a leaf node.
-    # Don't print anything, but account for the space occupied.
-    if not isinstance(tree.label(), tuple):
-        return max(
-            rwidth, 2 + lwidth +
-                    len("%s" % tree.label()), 2 + lwidth + len(tree[0])
-        )
-    (token, op) = tree.label()
-    if op == "Leaf":
+        # Is a leaf node.
+        # Don't print anything, but account for the space occupied.
+        if not isinstance(tree.label(), tuple):
+            return max(
+                rwidth, 2 + lwidth + len("%s" % tree.label()), 2 + lwidth + len(tree[0])
+            )
+        (token, op) = tree.label()
+
+        if op == "Leaf":
+            return rwidth
+
+        str_res = "%s" % (token.categ())
+        if token.semantics() is not None:
+            if str_res == "S":
+                out_parse = str(token.semantics())
+            str_res += " {" + str(token.semantics()) + "}"
         return rwidth
 
-    # Pad to the left with spaces, followed by a sequence of '-'
-    # and the derivation rule.
-    str_res = "%s" % (token.categ())
-    if token.semantics() is not None:
-        str_res += " {" + str(token.semantics()) + "}"
-    if lwidth == 0:
-        return str_res
-    return rwidth
+    out_parse = ""
+    make_ccg_parse(0, tree)
+    return out_parse
 
 
 def parse_sentence(sentence, time_limit=10):
@@ -425,13 +428,24 @@ def example(sentence):
         break
 
 
+def postprocess_parse(parse_str):
+    return "({})".format(parse_str.replace(",", " ").replace("'", " "))
+
+
 if __name__ == "__main__":
     # First time running will require downloading following nltk datasets
     # nltk.download('wordnet')
     # nltk.download('averaged_perceptron_tagger')
     # stanza.download('en')
     import time
+
     s = time.time()
-    # chart.printCCGDerivation(parse_sentence('how to find the index of a value in 2d array in python?'))
-    parse_sentence("sorting a dictionary by a key")
+    # chart.printCCGDerivation(parse_sentence('remove everything found between instances of start_string and end_string', 100))
+    # chart.printCCGDerivation(parse_sentence("return a list that contains all of the elements in this rdd", 100))
+    # chart.printCCGDerivation(parse_sentence("returns an array of bounding boxes of human faces in a image", 100))
+
+    # chart.printCCGDerivation(parse_sentence("use glob to find files recursively"))
+    tree = parse_sentence("find intersection of nested lists")
+    parse_str = get_ccg_parse(tree)
+    print(postprocess_parse(parse_str))
     print("elapsed: ", time.time() - s)
