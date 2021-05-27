@@ -91,13 +91,13 @@ def check_exists(docstr: str, words: List[str], tag: str = 'VB') -> bool:
         tag: Desiered part of speech tag.
 
     Returns:
-        True if any of the verbs exists in the docsting, otherwise False.
+        True if any of the words exists in the docsting, otherwise False.
     """
 
     tokens = preprocess_docstring(docstr, tag)
-    verb_exists = [np.any(word in tokens) for word in words]
+    exists = [np.any(word in tokens) for word in words]
 
-    if np.any(verb_exists):
+    if np.any(exists):
         return True
     return False
 
@@ -131,7 +131,7 @@ def save_to_json(data: List[dict], path: str):
     """
 
     df = pd.DataFrame.from_dict(data, orient='columns')
-    df.to_json(path, orient='records', lines=True, compression='gzip')
+    df.to_json(path, orient='records', lines=True)
 
 
 def read_json(path: str):
@@ -142,7 +142,7 @@ def read_json(path: str):
     Returns:
         Reads the specfied json/jsonl file to pandas dataframe.
     """
-    return pd.read_json(path, orient='records', lines=True, compression='gzip')
+    return pd.read_json(path, orient='records', lines=True)
 
 
 def get_code_search_net_files(verbs: List[str], file_path: str, out_path: str):
