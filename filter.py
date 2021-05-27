@@ -10,9 +10,9 @@ from tqdm import tqdm
 from typing import List
 
 from parser_dict import STRING2PREDICATE
-from parser import get_wordnet_pos, parse_sentence
+from parser import parse_sentence, get_ccg_parse, postprocess_parse
 
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load('en_core_web_sm')
 
 
 def get_all_verbs_from_action_verb(action_verb: str) -> List[str]:
@@ -23,11 +23,10 @@ def get_all_verbs_from_action_verb(action_verb: str) -> List[str]:
 
     if verb_list:
         return verb_list
-    raise ValueError(
-        f'The action word {action_verb} is not in the predicate dictionary.')
+    raise ValueError(f'The action word {action_verb} is not in the predicate dictionary.')
 
 
-def list_files(directory: str, file_ext: str = ".jsonl") -> List[str]:
+def list_files(directory: str, file_ext: str = '.jsonl') -> List[str]:
     """List all files in the given directory (recursively)."""
     filenames = []
 
@@ -74,78 +73,86 @@ def get_filtered_functions(data: str, verbs: List[str]) -> list:
 
     data = '[' + re.sub(r'\}\s\{', '},{', data) + ']'
     data = json.loads(data)
+
     verb_data = []
-    for i, file in tqdm(enumerate(data[:10]), total=len(data), desc="Processing code search net functions."):
+    for i, file in tqdm(enumerate(data), total=len(data), desc='Processing code search net queries.'):
         exists = check_exists(file['docstring'], verbs)
         if exists:
             verb_data.append(file)
     return verb_data
 
 
-def save_to_csv(data: List[dict], name: str):
-    """Makes the dataframe and saves it to csv file."""
+def save_to_json(data: List[dict], name: str):
+    """Makes the dataframe and saves it to json/jsonl file."""
 
     df = pd.DataFrame.from_dict(data, orient='columns')
-    df.to_csv(name)
+    df.to_json(name, orient='records', lines=True)
 
 
-def read_csv(path: str):
-    """Reads the specfied csv file to pandas dataframe."""
-    return pd.read_csv(path)
+def read_json(path: str):
+    """Reads the specfied json/jsonl file to pandas dataframe."""
+    return pd.read_json(path, orient='records', lines=True)
 
 
 def get_code_search_net_files(verbs: List[str], path: str = '../code_search_net/', partition: str = 'train'):
-    """Gets all the files from a directory, filters out the necessary functions and saves them in csv."""
+    """Gets all the files from a directory, filters out the necessary queries and saves them in json/jsonl file."""
 
     data_files = list_files(path + partition)
     data_list = []
 
     for file in data_files:
         data = read_file(file)
-        data_list.extend(get_filtered_functions(data, verbs))
+        funcs = get_filtered_functions(data, verbs)
+        data_list.extend(funcs)
 
-    save_to_csv(data_list, name=f'{path}/{partition}_filtered.csv')
+    save_to_json(data_list, name=f'{path}/{partition}_filtered.jsonl')
 
 
 def filter_out_prepositions(prepositions: List[str], path: str = '../code_search_net/', partition: str = 'train'):
-    """Gets the csv and filters out the functions with desired prepositions."""
+    """Gets the json/jsonl and filters out the functions with desired prepositions."""
 
-    df = read_csv(f'{path}/{partition}_filtered.csv')
+    df = read_json(f'{path}/{partition}_filtered.jsonl')
     data_list = []
 
-    for i, file in tqdm(df.iterrows(), total=len(df), desc="Processing filtered functions."):
+    for i, file in tqdm(df.iterrows(), total=len(df), desc='Processing filtered functions.'):
         exists = check_exists(file['docstring'], words=prepositions, tag='IN')
         if exists:
             data_list.append(file)
 
-    save_to_csv(
-        data_list, name=f'{path}/{partition}_prepositions_filtered.csv')
+    save_to_json(data_list, name=f'{path}/{partition}_prepositions_filtered.jsonl')
 
 
 def ccg_parse_filtered_functions(path: str = '../code_search_net/', partition: str = 'train', preposition: bool = False):
-    """Gets the csv and gets the proportion of parsable docstrings."""
+    """Gets the json/jsonl files, gets the ccg parses of every queries, adds to the dataframe and save as json/jsonl file."""
 
-    proportion = 0
     if preposition:
-        df = read_csv(f'{path}/{partition}_prepositions_filtered.csv')
+        df = read_json(f'{path}/{partition}_prepositions_filtered.jsonl')
     else:
-        df = read_csv(f'{path}/{partition}_filtered.csv')
+        df = read_json(f'{path}/{partition}_filtered.jsonl')
 
-    for i, file in tqdm(df.iterrows(), total=len(df), desc="Processing filtered functions."):
+    df['ccg_parse'] = ''
+    for i, file in tqdm(df.iterrows(), total=len(df), desc="Processing filtered queries."):
         try:
-            parse_sentence(file['docstring'])
+            tree = parse_sentence(file['docstring'])
+            parse_str = get_ccg_parse(tree)
+            parse_str = postprocess_parse(parse_str)
+
+            file['ccg_parse'] = parse_str
         except Exception:
-            proportion += 1
+            pass
 
-    print(f'For {partition} with preposition {preposition} is {((len(df) - proportion) / len(df)) * 100}%')
+    if preposition:
+        df = save_to_json(df, f'{path}/{partition}_prepositions_filtered_parses.jsonl')
+    else:
+        df = save_to_json(df, f'{path}/{partition}_filtered_parses.jsonl')
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     # all_verbs = get_all_verbs_from_action_verb('Convert')
     # get_code_search_net_files(all_verbs, partition='train')
     # get_code_search_net_files(all_verbs, partition='valid')
 
     # prepositions = ['to', 'into', 'from']
-    # filter_out_prepositions(prepositions, partition='valid')
+    # filter_out_prepositions(prepositions, partition='train')
 
-    ccg_parse_filtered_functions(partition='valid')
+    ccg_parse_filtered_functions(partition='train')
