@@ -54,7 +54,9 @@ tokenizer = Tokenizer(nlp.vocab)
 
 logger = logging.getLogger(__name__)
 
-POS_TAGGER = stanza.Pipeline(lang='en', processors='tokenize,pos', tokenize_pretokenized=True)
+POS_TAGGER = stanza.Pipeline(
+    lang='en', processors='tokenize,pos', tokenize_pretokenized=True)
+
 
 def get_wordnet_pos(treebank_tag):
     '''Convert from Treebank POS tags to Wordnet POS tags'''
@@ -123,11 +125,14 @@ def add_verb(word):
     predicate = "$" + word
     rules = predicate + " => S/NP {\\x. '@Action'('" + word + "', x)}\n"
     rules += predicate + " => S/PP {\\x. '@Action'('" + word + "', x)}\n"
-    rules += predicate + " => (S/NP)/PP {\\y x. '@Action'('" + word + "', x, y)}\n"
-    rules += predicate + " => (S/NP)/NP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    rules += predicate + \
+        " => (S/NP)/PP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    rules += predicate + \
+        " => (S/NP)/NP {\\y x. '@Action'('" + word + "', x, y)}\n"
     # rules += predicate + " => S/VP {\\x. '@Action'('" + word + "', x)}\n"
     # rules += predicate + " => (S/VP)/PP {\\y x. '@Action'('" + word + "', x, y)}\n"
-    rules += predicate + " => (S/NP)/VP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    rules += predicate + \
+        " => (S/NP)/VP {\\y x. '@Action'('" + word + "', x, y)}\n"
     # rules += predicate + " => (S/VP)/NP {\\y x. '@Action'('" + word + "', x, y)}\n"
     return predicate, rules
 
@@ -204,8 +209,6 @@ def tokenize(sentence, allow_phrases=False):
     each token can be mapped to multiple predicates"""
     # log[j] is a list containing temporary results using 0..(j-1) tokens
     pos_tags = [w.xpos for w in POS_TAGGER([sentence]).sentences[0].words]
-    print(pos_tags)
-
     assert len(pos_tags) == len(sentence)
     log = {i: [] for i in range(len(sentence) + 1)}
     log[0] = [[]]
@@ -240,10 +243,11 @@ def get_entry(word_name, category, semantics):
 
 ### Helper functions for Parsing ###
 def remove_punctuation(sentence):
-    # TODO:
-    # 1. handle dictionary/list, non-consuming
-    # 2. python 2.6 -> python 26
-    return sentence.translate(str.maketrans('', '', string.punctuation))
+    sentence = sentence.replace('/', ' or ')
+
+    punctuations = string.punctuation
+    punctuations = punctuations.replace('_', '')
+    return sentence.translate(str.maketrans('', '', punctuations))
 
 
 def is_number(token):
@@ -338,7 +342,8 @@ def get_ccg_parse(tree):
         # Don't print anything, but account for the space occupied.
         if not isinstance(tree.label(), tuple):
             return max(
-                rwidth, 2 + lwidth + len("%s" % tree.label()), 2 + lwidth + len(tree[0])
+                rwidth, 2 + lwidth +
+                len("%s" % tree.label()), 2 + lwidth + len(tree[0])
             )
         (token, op) = tree.label()
 
@@ -445,7 +450,7 @@ if __name__ == "__main__":
     # chart.printCCGDerivation(parse_sentence("returns an array of bounding boxes of human faces in a image", 100))
 
     # chart.printCCGDerivation(parse_sentence("use glob to find files recursively"))
-    tree = parse_sentence("find intersection of nested lists")
+    tree = parse_sentence("find intersection, of nested lists from code_search_net")
     parse_str = get_ccg_parse(tree)
     print(postprocess_parse(parse_str))
     print("elapsed: ", time.time() - s)
