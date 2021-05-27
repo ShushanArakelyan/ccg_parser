@@ -3,20 +3,20 @@ import logging
 import signal
 import string
 
-import nltk
 import numpy as np
+import stanza
 from nltk.ccg import chart, lexicon
 from nltk.corpus import wordnet
 from nltk.stem import WordNetLemmatizer
 from spacy.lang.en import English
 from spacy.tokenizer import Tokenizer
 
-from parser_dict import STRING2PREDICATE, WORD2NUMBER, RAW_LEXICON, QUESTION_WORDS
+from parser_dict import STRING2PREDICATE, WORD2NUMBER, RAW_LEXICON, QUESTION_WORDS, PYTHON_WORDS
 
 DEBUG = False
 
 BEAM_WIDTH = 100
-MAX_PHRASE_LEN = 4
+MAX_PHRASE_LEN = 3
 
 COMMA_INDEX = {',': 0, '-LRB-': 1, '-RRB-': 2, '.': 3, '-': 4}
 SPECIAL_CHARS = {' ': '_', '(': '[LEFT_BRACKET]', ')': '[RIGHT_BRACKET]',
@@ -49,28 +49,30 @@ NER_DICT = {
 
 VAR_NAMES = ['X', 'Y', 'Z', 'Answer']
 
-TAGS_OF_INTEREST = ['NP', 'VP', 'PP',
-                    'NN', 'NNS', 'NNP', 'NNPS', 'PRP', 'PRP$',
-                    'VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
-
 nlp = English()
 tokenizer = Tokenizer(nlp.vocab)
 
 logger = logging.getLogger(__name__)
 
+POS_TAGGER = stanza.Pipeline(lang='en', processors='tokenize,pos', tokenize_pretokenized=True)
 
 def get_wordnet_pos(treebank_tag):
     '''Convert from Treebank POS tags to Wordnet POS tags'''
     if treebank_tag.startswith('J'):
         return wordnet.ADJ
     elif treebank_tag.startswith('V'):
+        # to handle multiple verbs in a sentence
+        # if treebank_tag == 'VB':
+        #     return wordnet.VERB
+        # else:
+        #     return wordnet.NOUN
         return wordnet.VERB
     elif treebank_tag.startswith('N'):
         return wordnet.NOUN
     elif treebank_tag.startswith('R'):
         return wordnet.ADV
     else:
-        return ''
+        return wordnet.NOUN
 
 
 def fill_whitespace_in_quote(sentence):
@@ -114,11 +116,53 @@ def preprocess_sent(sentence):
     return ret_sentences
 
 
+def add_verb(word):
+    """
+    Makes the given verb a predicate and add rules for it.
+    """
+    predicate = "$" + word
+    rules = predicate + " => S/NP {\\x. '@Action'('" + word + "', x)}\n"
+    rules += predicate + " => S/PP {\\x. '@Action'('" + word + "', x)}\n"
+    rules += predicate + " => (S/NP)/PP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    rules += predicate + " => (S/NP)/NP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    # rules += predicate + " => S/VP {\\x. '@Action'('" + word + "', x)}\n"
+    # rules += predicate + " => (S/VP)/PP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    rules += predicate + " => (S/NP)/VP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    # rules += predicate + " => (S/VP)/NP {\\y x. '@Action'('" + word + "', x, y)}\n"
+    return predicate, rules
+
+
+def add_noun(word):
+    """
+    Makes the given noun a predicate and add rules for it.
+    """
+    predicate = "$" + word
+    rules = predicate + " => N {'" + word + "'}\n"
+    rules += predicate + " => NP {'" + word + "'}\n"
+    rules += predicate + " => NP/NP {\\x. '@Concat'('" + word + "', x)}\n"
+    # rules += predicate + " => NP\\NP {\\x. '@Concat'('" + word + "', x)}\n"
+    rules += predicate + " => NP/VP {\\x. '@Concat'('" + word + "', x)}\n"
+    rules += predicate + " => NP/PP {\\x. '@Concat'('" + word + "', x)}\n"
+    rules += predicate + " => S/S {\\F. F('@Concat'('" + word + "'))}\n"
+    return predicate, rules
+
+
+def add_get(sentence, pos_tags):
+    """
+    For the sentences that don't have verbs in them,
+    adds $Load at the begining of the sentence.
+    """
+    exists = [np.any(pos.startswith("V")) for pos in pos_tags]
+    verb_to_add = ['$Load']
+    if not np.any(exists):
+        sentence = [verb_to_add + sentence[0]]
+    return sentence
+
+
 def string_to_predicate(s, pos):
     """input: one string (can contain multiple tokens with ;
     output: a list of predicates."""
     new_rules = ""
-
     if s != ',' and s not in REVERSE_SPECIAL_CHARS:
         s = s.lower().strip(',')
     if s.startswith("$"):
@@ -126,6 +170,11 @@ def string_to_predicate(s, pos):
     elif s.startswith("\"") and s.endswith("\""):
         return ["'" + s[1:-1] + "'"], new_rules
     elif s in STRING2PREDICATE:
+        if s == 'to':
+            if pos == "TO":
+                return ["$To_verb"], new_rules
+            elif pos == "IN":
+                return ["$To"], new_rules
         return STRING2PREDICATE[s], new_rules
     elif s.isdigit():
         return ["'" + s + "'"], new_rules
@@ -138,18 +187,14 @@ def string_to_predicate(s, pos):
     else:
         if pos:
             lemmatizer = WordNetLemmatizer()
-            lemma_form = lemmatizer.lemmatize(s, pos)
+            lemma_form = lemmatizer.lemmatize(s, get_wordnet_pos(pos))
             if lemma_form in STRING2PREDICATE:
+                # if pos == "VBG" or pos == "VBD":
                 return STRING2PREDICATE[lemma_form], new_rules
-        new_predicate = "$" + s
-        # rules for noun phrases
-        new_rules = new_predicate + "  => N {'" + s + "'}\n"
-        new_rules += new_predicate + "  => NP {'" + s + "'}\n"
-        new_rules += new_predicate + \
-                     "  => NP/NP {\\x. '@Concat'('" + s + "', x)}\n"
-        new_rules += new_predicate + \
-                     " => S/S {\\F. F('@Desc'('" + s + "'))}\n"
-        # TODO add separate rules for verbs
+            if pos.startswith("V"):
+                new_predicate, new_rules = add_verb(lemma_form)
+            else:
+                new_predicate, new_rules = add_noun(lemma_form)
         return [new_predicate], new_rules
 
 
@@ -158,7 +203,9 @@ def tokenize(sentence, allow_phrases=False):
     output: a list of possible tokenization of the sentence;
     each token can be mapped to multiple predicates"""
     # log[j] is a list containing temporary results using 0..(j-1) tokens
-    pos_tags = [get_wordnet_pos(pair[1]) for pair in nltk.pos_tag(sentence)]
+    pos_tags = [w.xpos for w in POS_TAGGER([sentence]).sentences[0].words]
+    print(pos_tags)
+
     assert len(pos_tags) == len(sentence)
     log = {i: [] for i in range(len(sentence) + 1)}
     log[0] = [[]]
@@ -177,7 +224,10 @@ def tokenize(sentence, allow_phrases=False):
                     log[i + _range].append(temp_result + [predicate])
             if token.startswith("\""):  # avoid --"A" and "B"-- treated as one predicate
                 break
-    return log[len(sentence)], new_lexicon
+
+    # adds verb if the sentence doesn't have it
+    sentence = add_get(log[len(sentence)], pos_tags)
+    return sentence, new_lexicon
 
 
 def get_word_name(layer, st, idx):
@@ -217,9 +267,6 @@ def quote_word_lexicon(sentence):
     ret = ""
     for token in sentence:
         if is_quote_word(token):
-            # ret += get_entry(token, 'NP', token)
-            # ret += get_entry(token, 'N', token)
-            # ret += get_entry(token, 'NP', "'@In'({},'all')".format(token))
             if token[1:-1].isdigit():
                 ret += get_entry(token, 'NP', token)
                 ret += get_entry(token, 'N', token)
@@ -227,8 +274,6 @@ def quote_word_lexicon(sentence):
                                  "\\x.'@Num'({},x)".format(token))
                 ret += get_entry(token, 'N/N',
                                  "\\x.'@Num'({},x)".format(token))
-                # ret += get_entry(token, 'PP/PP/NP/NP', "\\x y F.'@WordCount'('@Num'({},x),y,F)".format(token))
-                # ret += get_entry(token, 'PP/PP/N/N', "\\x y F.'@WordCount'('@Num'({},x),y,F)".format(token))
 
     return ret
 
@@ -238,11 +283,78 @@ def remove_question_words(sentence):
     output: if the query is posed as a question, removes the question tokens, as defined in QUESTION_WORDS;
     returns the list of remaining tokens
     """
-    is_prefix = [np.all(sentence[:len(q_word)] == q_word) for q_word in QUESTION_WORDS]
+    is_prefix = [np.all(sentence[:len(q_word)] == q_word)
+                 for q_word in QUESTION_WORDS]
     if np.any(is_prefix):
         prefix = QUESTION_WORDS[np.where(is_prefix)[0][0]]
         sentence = sentence[len(prefix):]
     return sentence
+
+
+def remove_in_python(sentence):
+    """
+    input: a list of tokens in the query;
+    output: if the query has python with a reposition, removes the tokens, as defined in PYTHON_WORDS;
+            returns the list of remaining tokens
+    """
+    all_sequences = [sentence[i: i + 2] for i in range(len(sentence))]
+    exists = [np.any(word in all_sequences) for word in PYTHON_WORDS]
+
+    if np.any(exists):
+        word = PYTHON_WORDS[np.where(exists)[0][0]]
+        index = all_sequences.index(word)
+        if index + 2 >= len(sentence):
+            sentence = sentence[:index]
+        else:
+            # for numerical values that come after python
+            if sentence[index + 2].isnumeric():
+                sentence = sentence[:index + 1] + sentence[index + 2:]
+            sentence = sentence[:index] + sentence[index + 2:]
+
+    return sentence
+
+
+def remove_specific_word(sentence, word='python'):
+    return list(filter((word).__ne__, sentence))
+
+
+# this function is adapted from nltk.chart.printCCGTree
+def get_ccg_parse(tree):
+    def make_ccg_parse(lwidth, tree):
+        from nltk.tree import Tree
+        nonlocal out_parse
+        rwidth = lwidth
+
+        # Is a leaf (word).
+        # Increment the span by the space occupied by the leaf.
+        if not isinstance(tree, Tree):
+            return 2 + lwidth + len(tree)
+
+        # Find the width of the current derivation step
+        for child in tree:
+            rwidth = max(rwidth, make_ccg_parse(rwidth, child))
+
+        # Is a leaf node.
+        # Don't print anything, but account for the space occupied.
+        if not isinstance(tree.label(), tuple):
+            return max(
+                rwidth, 2 + lwidth + len("%s" % tree.label()), 2 + lwidth + len(tree[0])
+            )
+        (token, op) = tree.label()
+
+        if op == "Leaf":
+            return rwidth
+
+        str_res = "%s" % (token.categ())
+        if token.semantics() is not None:
+            if str_res == "S":
+                out_parse = str(token.semantics())
+            str_res += " {" + str(token.semantics()) + "}"
+        return rwidth
+
+    out_parse = ""
+    make_ccg_parse(0, tree)
+    return out_parse
 
 
 def parse_sentence(sentence, time_limit=10):
@@ -250,20 +362,26 @@ def parse_sentence(sentence, time_limit=10):
     time_limit: if a positive number, TimeoutError will be thrown if parsing is not finished after time_limit seconds
     returns: a single parse tree
     """
-    sentence = remove_punctuation(sentence)
-    split_sentence = remove_question_words(sentence.split())
+    sentence = sentence.lower()
+    split_sentence = remove_punctuation(sentence).split()
+    split_sentence = remove_in_python(split_sentence)
+    split_sentence = remove_specific_word(split_sentence)
+    split_sentence = remove_question_words(split_sentence)
     ts, new_lexicon = tokenize(split_sentence)
+
     if DEBUG:
         print(ts)
 
     assert len(ts) == 1  # we are processing just one sentence
     ts = ts[0]
-    beam_lexicon = copy.deepcopy(RAW_LEXICON) + quote_word_lexicon(ts) + new_lexicon
+    beam_lexicon = copy.deepcopy(RAW_LEXICON) + \
+        quote_word_lexicon(ts) + new_lexicon
     lex = lexicon.fromstring(beam_lexicon, include_semantics=True)
     parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
 
     def timeout(_, __):
-        raise TimeoutError("parsing sentence {} takes too long".format(sentence))
+        raise TimeoutError(
+            "parsing sentence {} takes too long".format(sentence))
 
     try:
         signal.signal(signal.SIGALRM, handler=timeout)
@@ -278,14 +396,16 @@ def parse_sentence(sentence, time_limit=10):
     return parse_tree
 
 
-def example():
+def example(sentence):
     # These work
-    sentence = "sort a nested list by two elements"
-    sentence = remove_punctuation(sentence)
-    sentence = remove_question_words(sentence.split())
+    sentence = sentence.lower()
+    sentence = remove_punctuation(sentence).split()
+    sentence = remove_in_python(sentence)
+    sentence = remove_specific_word(sentence)
+    sentence = remove_question_words(sentence)
     ts, new_lexicon = tokenize(sentence)
-    # ts = tokenize("find the list".split(' '))
 
+    # ts = tokenize("find the list".split(' '))
     # ts = tokenize("find the index of an item in a list".split(' '))
     # ts = tokenize("find intersection of nested lists".split(' '))
     # ts = tokenize("round 123 to 100 instead of 100.0.split(' ')) # nltk.sem.logic.LogicalExpressionException: Unexpected token: '.' 100.0'
@@ -295,7 +415,8 @@ def example():
     # ts = tokenize("use glob to find files recursively".split(' '))
     # ts = tokenize("find the duplicates in a list and create another list with them".split(' '))
 
-    beam_lexicon = copy.deepcopy(RAW_LEXICON) + quote_word_lexicon(ts[0]) + new_lexicon
+    beam_lexicon = copy.deepcopy(RAW_LEXICON) + \
+        quote_word_lexicon(ts[0]) + new_lexicon
     lex = lexicon.fromstring(beam_lexicon, include_semantics=True)
     parser = chart.CCGChartParser(lex, chart.DefaultRuleSet)
     for tsi in ts:
@@ -307,13 +428,24 @@ def example():
         break
 
 
+def postprocess_parse(parse_str):
+    return "({})".format(parse_str.replace(",", " ").replace("'", " "))
+
+
 if __name__ == "__main__":
     # First time running will require downloading following nltk datasets
     # nltk.download('wordnet')
     # nltk.download('averaged_perceptron_tagger')
-
+    # stanza.download('en')
     import time
 
     s = time.time()
-    chart.printCCGDerivation(parse_sentence('how to find the index of a value in 2d array in python?'))
+    # chart.printCCGDerivation(parse_sentence('remove everything found between instances of start_string and end_string', 100))
+    # chart.printCCGDerivation(parse_sentence("return a list that contains all of the elements in this rdd", 100))
+    # chart.printCCGDerivation(parse_sentence("returns an array of bounding boxes of human faces in a image", 100))
+
+    # chart.printCCGDerivation(parse_sentence("use glob to find files recursively"))
+    tree = parse_sentence("find intersection of nested lists")
+    parse_str = get_ccg_parse(tree)
+    print(postprocess_parse(parse_str))
     print("elapsed: ", time.time() - s)
