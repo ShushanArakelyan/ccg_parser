@@ -15,9 +15,14 @@ from parser import parse_sentence, get_ccg_parse, postprocess_parse
 nlp = spacy.load('en_core_web_sm')
 
 
-def get_all_verbs_from_action_verb(action_verb: str) -> List[str]:
-    """Returns all the verbs related to the provided action verb."""
+def get_strings_from_predicate(action_verb: str) -> List[str]:
+    """
+    Args:
+        action_verb: Desired action verb/predicate.
 
+    Returns:
+        List of verbs related to the action verb.
+    """
     verb = f'${action_verb.capitalize()}'
     verb_list = [k for k, v in STRING2PREDICATE.items() if v[0] == verb]
 
@@ -27,11 +32,18 @@ def get_all_verbs_from_action_verb(action_verb: str) -> List[str]:
         f'The action word {action_verb} is not in the predicate dictionary.')
 
 
-def list_files(directory: str, file_ext: str = '.jsonl') -> List[str]:
-    """List all files in the given directory (recursively)."""
+def list_files(dir_path: str, file_ext: str = '.jsonl') -> List[str]:
+    """
+    Args:
+        dir_path: Path to the directory.
+        file_ext: Desired file extension.
+
+    Returns:
+        List of files in the given directory (recursively).
+    """
     filenames = []
 
-    for root, dirs, files in os.walk(directory):
+    for root, dirs, files in os.walk(dir_path):
         for filename in files:
             if filename.endswith(file_ext):
                 filenames.append(os.path.join(root, filename))
@@ -39,19 +51,32 @@ def list_files(directory: str, file_ext: str = '.jsonl') -> List[str]:
     return filenames
 
 
-def read_file(filename: str) -> str:
-    """Open a file and return its contents as a string."""
-    with open(filename) as file:
+def read_file(path: str) -> str:
+    """
+    Args:
+        path: Path to a file.
+
+    Returns:
+        File contents as a string.
+    """
+    with open(path) as file:
         return file.read()
 
 
 def preprocess_docstring(docstr: str, tag: str) -> List[str]:
-    """Tokenizing and lemmatizing the docstring of the function."""
+    """
+    Args:
+        docstr: Docstring of a query.
+        tag: Desiered part of speech tag.
+
+    Returns:
+        List of tokens of the docstring that has the given pos tag.
+    """
 
     tokens = nlp(docstr)
     pos_tags = [token.tag_ for token in tokens]
 
-    # checks whether the word is a verb or not
+    # checks whether the word has expected pos tag
     tokens = [tokens[i] for i, pos in enumerate(pos_tags) if pos == tag]
     tokens = [token.lemma_ for token in tokens]
 
@@ -59,18 +84,33 @@ def preprocess_docstring(docstr: str, tag: str) -> List[str]:
 
 
 def check_exists(docstr: str, words: List[str], tag: str = 'VB') -> bool:
-    """Checks whether any of the verbs exists in docsting."""
+    """
+    Args:
+        docstr: Docstring of a query.
+        words: List of verbs connected to the given action verb.
+        tag: Desiered part of speech tag.
+
+    Returns:
+        True if any of the verbs exists in the docsting, otherwise False.
+    """
 
     tokens = preprocess_docstring(docstr, tag)
-    is_prefix = [np.any(q_word in tokens) for q_word in words]
+    verb_exists = [np.any(word in tokens) for word in words]
 
-    if np.any(is_prefix):
+    if np.any(verb_exists):
         return True
     return False
 
 
-def get_filtered_functions(data: str, verbs: List[str]) -> list:
-    """Checks whether any of the verbs exists in docsting."""
+def filter_by_verbs(data: str, verbs: List[str]) -> list:
+    """
+    Args:
+        data: Docstrings of a queries.
+        verbs: All the verbs connected to the given action verb.
+
+    Returns:
+        List of queries where the verb exists in the docstring.
+    """
 
     data = '[' + re.sub(r'\}\s\{', '},{', data) + ']'
     data = json.loads(data)
@@ -83,36 +123,56 @@ def get_filtered_functions(data: str, verbs: List[str]) -> list:
     return verb_data
 
 
-def save_to_json(data: List[dict], name: str):
-    """Makes the dataframe and saves it to json/jsonl file."""
+def save_to_json(data: List[dict], path: str):
+    """
+    Args:
+        data: List of dictionaries with filtered queries.
+        path: The path to the json/jsonl file to save results in.
+    """
 
     df = pd.DataFrame.from_dict(data, orient='columns')
-    df.to_json(name+ '.gz', orient='records', lines=True)
+    df.to_json(path, orient='records', lines=True, compression='gzip')
 
 
 def read_json(path: str):
-    """Reads the specfied json/jsonl file to pandas dataframe."""
-    return pd.read_json(path +'.gz', orient='records', lines=True, compression='gzip')
+    """
+    Args:
+        path: The path to the directory with CodeSearchNet data.
+
+    Returns:
+        Reads the specfied json/jsonl file to pandas dataframe.
+    """
+    return pd.read_json(path, orient='records', lines=True, compression='gzip')
 
 
-def get_code_search_net_files(verbs: List[str], path: str = '../code_search_net/', partition: str = 'train'):
-    """Gets all the files from a directory, filters out the necessary queries and saves them in json/jsonl file."""
+def get_code_search_net_files(verbs: List[str], file_path: str, out_path: str):
+    """
+    Args:
+        verbs: All the verbs connected to the given action verb.
+        file_path: Path to the directory with the CodeSearchNet data.
+        out_path: Path to the json/jsonl file to save results in.
+    """
 
-    data_files = list_files(path + partition)
+    data_files = list_files(file_path)
     data_list = []
 
     for file in data_files:
         data = read_file(file)
-        funcs = get_filtered_functions(data, verbs)
+        funcs = filter_by_verbs(data, verbs)
         data_list.extend(funcs)
 
-    save_to_json(data_list, name=f'{path}/{partition}_filtered.jsonl')
+    save_to_json(data_list, out_path)
 
 
-def filter_out_prepositions(prepositions: List[str], path: str = '../code_search_net/', partition: str = 'train'):
-    """Gets the json/jsonl and filters out the functions with desired prepositions."""
+def filter_by_preposition(prepositions: List[str], file_path: str, out_path: str):
+    """
+    Args:
+        prepositions: All the prepositions to filter out.
+        file_path: Path to the json/jsonl file to be processed.
+        out_path: Path to the json/jsonl file to save results in.
+    """
 
-    df = read_json(f'{path}/{partition}_filtered.jsonl')
+    df = read_json(file_path)
     data_list = []
 
     for i, file in tqdm(df.iterrows(), total=len(df), desc='Processing filtered functions.'):
@@ -120,17 +180,19 @@ def filter_out_prepositions(prepositions: List[str], path: str = '../code_search
         if exists:
             data_list.append(file)
 
-    save_to_json(
-        data_list, name=f'{path}/{partition}_prepositions_filtered.jsonl')
+    save_to_json(data_list, out_path)
 
 
-def ccg_parse_filtered_functions(path: str = '../code_search_net/', partition: str = 'train', preposition: bool = False):
-    """Gets the json/jsonl files, gets the ccg parses of every queries, adds to the dataframe and save as json/jsonl file."""
+def ccg_parse_filtered_functions(file_path: str, out_path: str):
+    """
+    Args:
+        file_path: Path to the json/jsonl file to be processed.
+        out_path: Path to the json/jsonl file to save results in.
 
-    if preposition:
-        df = read_json(f'{path}/{partition}_prepositions_filtered.jsonl')
-    else:
-        df = read_json(f'{path}/{partition}_filtered.jsonl')
+    Gets the ccg parses to dicstrings, adds them to the dataframe and save as json/jsonl file.
+    """
+
+    df = read_json(file_path)
 
     df['ccg_parse'] = ''
     for i, file in tqdm(df.iterrows(), total=len(df), desc="Processing filtered queries."):
@@ -143,18 +205,16 @@ def ccg_parse_filtered_functions(path: str = '../code_search_net/', partition: s
         except Exception:
             pass
 
-    if preposition:
-        df = save_to_json(
-            df, f'{path}/{partition}_prepositions_filtered_parses.jsonl')
-    else:
-        df = save_to_json(df, f'{path}/{partition}_filtered_parses.jsonl')
+    save_to_json(df, out_path)
 
 
 if __name__ == '__main__':
-    # all_verbs = get_all_verbs_from_action_verb('Convert')
-    # get_code_search_net_files(all_verbs, partition='train')
-    # get_code_search_net_files(all_verbs, partition='valid')
+    # all_verbs = get_strings_from_predicate('convert')
+    # get_code_search_net_files(all_verbs, file_path='../code_search_net/train', out_path='../code_search_net/train_filtered.jsonl.gz')
 
     # prepositions = ['to', 'into', 'from']
-    # filter_out_prepositions(prepositions, partition='train')
-    ccg_parse_filtered_functions(partition='valid')
+    # filter_by_preposition(prepositions, file_path='../code_search_net/train_filtered.jsonl.gz',
+    #                       out_path='../code_search_net/train_filtered_preposition.jsonl.gz')
+
+    ccg_parse_filtered_functions(file_path='../code_search_net/train_filtered.jsonl.gz',
+                                 out_path='../code_search_net/train_filtered_parses.jsonl.gz')
