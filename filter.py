@@ -23,7 +23,8 @@ def get_all_verbs_from_action_verb(action_verb: str) -> List[str]:
 
     if verb_list:
         return verb_list
-    raise ValueError(f'The action word {action_verb} is not in the predicate dictionary.')
+    raise ValueError(
+        f'The action word {action_verb} is not in the predicate dictionary.')
 
 
 def list_files(directory: str, file_ext: str = '.jsonl') -> List[str]:
@@ -86,12 +87,12 @@ def save_to_json(data: List[dict], name: str):
     """Makes the dataframe and saves it to json/jsonl file."""
 
     df = pd.DataFrame.from_dict(data, orient='columns')
-    df.to_json(name, orient='records', lines=True)
+    df.to_json(name+ '.gz', orient='records', lines=True)
 
 
 def read_json(path: str):
     """Reads the specfied json/jsonl file to pandas dataframe."""
-    return pd.read_json(path, orient='records', lines=True)
+    return pd.read_json(path +'.gz', orient='records', lines=True, compression='gzip')
 
 
 def get_code_search_net_files(verbs: List[str], path: str = '../code_search_net/', partition: str = 'train'):
@@ -119,7 +120,8 @@ def filter_out_prepositions(prepositions: List[str], path: str = '../code_search
         if exists:
             data_list.append(file)
 
-    save_to_json(data_list, name=f'{path}/{partition}_prepositions_filtered.jsonl')
+    save_to_json(
+        data_list, name=f'{path}/{partition}_prepositions_filtered.jsonl')
 
 
 def ccg_parse_filtered_functions(path: str = '../code_search_net/', partition: str = 'train', preposition: bool = False):
@@ -137,12 +139,13 @@ def ccg_parse_filtered_functions(path: str = '../code_search_net/', partition: s
             parse_str = get_ccg_parse(tree)
             parse_str = postprocess_parse(parse_str)
 
-            file['ccg_parse'] = parse_str
+            df.at[i, 'ccg_parse'] = parse_str
         except Exception:
             pass
 
     if preposition:
-        df = save_to_json(df, f'{path}/{partition}_prepositions_filtered_parses.jsonl')
+        df = save_to_json(
+            df, f'{path}/{partition}_prepositions_filtered_parses.jsonl')
     else:
         df = save_to_json(df, f'{path}/{partition}_filtered_parses.jsonl')
 
@@ -154,5 +157,4 @@ if __name__ == '__main__':
 
     # prepositions = ['to', 'into', 'from']
     # filter_out_prepositions(prepositions, partition='train')
-
-    ccg_parse_filtered_functions(partition='train')
+    ccg_parse_filtered_functions(partition='valid')
