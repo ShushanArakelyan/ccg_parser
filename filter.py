@@ -195,8 +195,8 @@ def ccg_parse_filtered_functions(file_path: str, out_path: str, logdir: str, tim
     with open(logdir + '/failed_queries.txt', 'w') as f_out, \
             open(logdir + '/exceptions.txt', 'w') as ex_out, \
             open(logdir + '/timeout.txt', 'w') as t_out:
-        data_gen = tqdm(df.head(5).iterrows(), total=len(
-            df), desc="Processing filtered queries.")
+        data_gen = tqdm(df.iterrows(), total=len(df))
+        
         for i, file in data_gen:
             doc = ' '.join(file['docstring_tokens']).lower()
             try:
