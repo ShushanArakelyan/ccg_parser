@@ -313,6 +313,7 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $To_verb => S/S {\\x. x}
     $To_verb => VP/VP {\\x. x}
     $To => PP/NP {\\x. '@To'(x)}
+    # $To => (PP\\NP)/NP {\\y x.'@To'(x, y)}
     $To => PP/VP {\\x. '@To'(x)}
     $With => PP/NP {\\x.'@With'(x)}
     $With => PP/VP {\\x.'@With'(x)}
@@ -336,7 +337,7 @@ RAW_LEXICON = ''' :- S, NP, N, VP, PP
     $Return => (S/VP)/PP {\\y x.'@Action'('Return', x, y)}
     $Return => (VP/NP)/PP {\\y x.'@Action'('Return', x, y)}
     $Return => (VP/NP)/NP {\\y x.'@Action'('Return', x, y)}
-    
+
     $Merge => S/NP {\\x. '@Action'('Merge', x)}
     $Merge => S/PP {\\x. '@Action'('Merge', x)}
     $Merge => (S/NP)/PP {\\y x. '@Action'('Merge', x, y)}

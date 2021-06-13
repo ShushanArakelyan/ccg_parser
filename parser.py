@@ -1,17 +1,17 @@
+import numpy as np
 import copy
 import logging
 import signal
 import string
+import spacy
+import time
 
-import numpy as np
-import stanza
-from nltk.ccg import chart, lexicon
-from nltk.corpus import wordnet
 from nltk.stem import WordNetLemmatizer
-from spacy.lang.en import English
-from spacy.tokenizer import Tokenizer
+from nltk.corpus import wordnet
+from nltk.ccg import chart, lexicon
 
 from parser_dict import STRING2PREDICATE, WORD2NUMBER, RAW_LEXICON, QUESTION_WORDS, PYTHON_WORDS
+
 
 DEBUG = False
 
@@ -49,17 +49,19 @@ NER_DICT = {
 
 VAR_NAMES = ['X', 'Y', 'Z', 'Answer']
 
-nlp = English()
-tokenizer = Tokenizer(nlp.vocab)
+nlp = spacy.load('en_core_web_sm')
 
 logger = logging.getLogger(__name__)
 
-POS_TAGGER = stanza.Pipeline(
-    lang='en', processors='tokenize,pos', tokenize_pretokenized=True)
 
+def get_wordnet_pos(treebank_tag: str):
+    """
+    Args:
+        treebank_tag: Treebank POS tags.
 
-def get_wordnet_pos(treebank_tag):
-    '''Convert from Treebank POS tags to Wordnet POS tags'''
+    Returns:
+        Wordnet POS tags.
+    """
     if treebank_tag.startswith('J'):
         return wordnet.ADJ
     elif treebank_tag.startswith('V'):
@@ -77,9 +79,13 @@ def get_wordnet_pos(treebank_tag):
         return wordnet.NOUN
 
 
-def fill_whitespace_in_quote(sentence):
-    """input: a string containing multiple sentences;
-    output: fill all whitespaces in a quotation mark into underscore"""
+def fill_whitespace_in_quote(sentence: str):
+    """
+    Args:
+        sentence: A string containing multiple sentences.
+
+    Fills all whitespaces in a quotation mark into underscore.
+    """
 
     def convert_special_chars(s, flag):
         return SPECIAL_CHARS[s] if s in SPECIAL_CHARS and flag else s
@@ -93,9 +99,14 @@ def fill_whitespace_in_quote(sentence):
     return output_sentence
 
 
-def preprocess_sent(sentence):
-    """input: a string containing multiple sentences;
-    output: a list of tokenized sentences"""
+def preprocess_sent(sentence: str):
+    """
+    Args:
+        sentence: A string containing multiple sentences.
+
+    Returns:
+        A list of tokenized sentences.
+    """
     sentence = fill_whitespace_in_quote(sentence)
     output = tokenizer(sentence)
     tokens = list(map(lambda x: x.text, output))
@@ -118,8 +129,11 @@ def preprocess_sent(sentence):
     return ret_sentences
 
 
-def add_verb(word):
+def add_verb(word: str):
     """
+    Args:
+        word: A single verb from a sentence.
+
     Makes the given verb a predicate and add rules for it.
     """
     predicate = "$" + word
@@ -137,8 +151,11 @@ def add_verb(word):
     return predicate, rules
 
 
-def add_noun(word):
+def add_noun(word: str):
     """
+    Args:
+        word: A single noun from a sentence.
+
     Makes the given noun a predicate and add rules for it.
     """
     predicate = "$" + word
@@ -152,8 +169,12 @@ def add_noun(word):
     return predicate, rules
 
 
-def add_get(sentence, pos_tags):
+def add_get(sentence: str, pos_tags: list):
     """
+    Args:
+        sentence: A string containing multiple tokens.
+        pos_tags: A list containing part of speech tags.
+
     For the sentences that don't have verbs in them,
     adds $Load at the begining of the sentence.
     """
@@ -164,9 +185,15 @@ def add_get(sentence, pos_tags):
     return sentence
 
 
-def string_to_predicate(s, pos):
-    """input: one string (can contain multiple tokens with ;
-    output: a list of predicates."""
+def string_to_predicate(s: str, pos: list):
+    """
+    Args:
+        s: A string (can contain multiple tokens with ;).
+        pos: The part of speech tag of the given string.
+
+    Returns:
+        A list of predicates.
+    """
     new_rules = ""
     if s != ',' and s not in REVERSE_SPECIAL_CHARS:
         s = s.lower().strip(',')
@@ -204,11 +231,20 @@ def string_to_predicate(s, pos):
 
 
 def tokenize(sentence, allow_phrases=False):
-    """input: a list of tokens;
-    output: a list of possible tokenization of the sentence;
-    each token can be mapped to multiple predicates"""
+    """
+    Args:
+        sentence: list of tokens.
+        allow_phrases: To allow using pharses instead of individual tokens.
+
+    Returns:
+        A  list of possible tokenization of the sentence;
+        each token can be mapped to multiple predicates
+    """
     # log[j] is a list containing temporary results using 0..(j-1) tokens
-    pos_tags = [w.xpos for w in POS_TAGGER([sentence]).sentences[0].words]
+    combined_sentence = ' '.join(sentence)
+    tokens = nlp(combined_sentence)
+    pos_tags = [token.tag_ for token in tokens]
+
     assert len(pos_tags) == len(sentence)
     log = {i: [] for i in range(len(sentence) + 1)}
     log[0] = [[]]
@@ -237,12 +273,28 @@ def get_word_name(layer, st, idx):
     return "$Layer{}_St{}_{}".format(str(layer), str(st), str(idx))
 
 
-def get_entry(word_name, category, semantics):
+def get_entry(word_name: str, category: str, semantics: str):
+    """
+    Args:
+        word_name: A single word.
+        category: Part of speech tag.
+        semantics: The semantics of the rule.
+
+    Returns:
+        A  combined sentence.
+    """
     return "\n\t\t{0} => {1} {{{2}}}".format(word_name, str(category), str(semantics))
 
 
 ### Helper functions for Parsing ###
-def remove_punctuation(sentence):
+def remove_punctuation(sentence: str):
+    """
+    Args:
+        sentence: A string containing multiple tokens.
+
+    Returns:
+        A string with no puntuation, except for _ .
+    """
     sentence = sentence.replace('/', ' or ')
 
     punctuations = string.punctuation
@@ -250,8 +302,14 @@ def remove_punctuation(sentence):
     return sentence.translate(str.maketrans('', '', punctuations))
 
 
-def is_number(token):
-    """ Returns True is string is a number. """
+def is_number(token: str):
+    """
+    Args:
+        token: A single token.
+
+    Returns:
+        True is string is a number.
+    """
     # Did it for handling not only integers, but float numbers as well.
     # The problem is that nltk parser doesn't allow '.' to be present in string
     try:
@@ -261,10 +319,15 @@ def is_number(token):
         return False
 
 
-def quote_word_lexicon(sentence):
-    """Special Handle for quoted words"""
+def quote_word_lexicon(sentence: list):
+    """
+    Args:
+        sentence: A list of multiple tokens.
 
-    def is_quote_word(token):
+    Special Handle for quoted words.
+    """
+
+    def is_quote_word(token: str):
         return (token.startswith("\'") and token.endswith("\'")) \
             or (token.startswith("\"") and token.endswith("\""))
 
@@ -282,10 +345,13 @@ def quote_word_lexicon(sentence):
     return ret
 
 
-def remove_question_words(sentence):
-    """input: a list of tokens in the query;
-    output: if the query is posed as a question, removes the question tokens, as defined in QUESTION_WORDS;
-    returns the list of remaining tokens
+def remove_question_words(sentence: list):
+    """
+    Args:
+        sentence: A list of multiple tokens.
+
+    If the query is posed as a question, removes the question tokens, as defined in QUESTION_WORDS;
+    returns the list of remaining tokens.
     """
     is_prefix = [np.all(sentence[:len(q_word)] == q_word)
                  for q_word in QUESTION_WORDS]
@@ -295,11 +361,13 @@ def remove_question_words(sentence):
     return sentence
 
 
-def remove_in_python(sentence):
+def remove_in_python(sentence: list):
     """
-    input: a list of tokens in the query;
-    output: if the query has python with a reposition, removes the tokens, as defined in PYTHON_WORDS;
-            returns the list of remaining tokens
+    Args:
+        sentence: A list of multiple tokens.
+
+    If the query has python with a reposition, removes the tokens, as defined in PYTHON_WORDS;
+    returns the list of remaining tokens.
     """
     all_sequences = [sentence[i: i + 2] for i in range(len(sentence))]
     exists = [np.any(word in all_sequences) for word in PYTHON_WORDS]
@@ -318,13 +386,29 @@ def remove_in_python(sentence):
     return sentence
 
 
-def remove_specific_word(sentence, word='python'):
+def remove_specific_word(sentence: str, word: str = 'python'):
+    """
+    Args:
+        sentence: A list of multiple tokens.
+        word: A specific word we want to remove.
+    """
     return list(filter((word).__ne__, sentence))
 
 
 # this function is adapted from nltk.chart.printCCGTree
 def get_ccg_parse(tree):
-    def make_ccg_parse(lwidth, tree):
+    """
+    Args:
+        tree: CCGTree.
+
+    Returns:
+        CCG parse in a string form.
+    """
+    def make_ccg_parse(lwidth: int, tree):
+        """
+        Args:
+            lwidth: The width of the current derivation step.
+        """
         from nltk.tree import Tree
         nonlocal out_parse
         rwidth = lwidth
@@ -362,12 +446,15 @@ def get_ccg_parse(tree):
     return out_parse
 
 
-def parse_sentence(sentence, time_limit=10):
-    """ sentence: preprocess and parse a single sentence.
-    time_limit: if a positive number, TimeoutError will be thrown if parsing is not finished after time_limit seconds
-    returns: a single parse tree
+def parse_sentence(sentence: str, time_limit: int = 10):
     """
-    sentence = sentence.lower()
+    Args:
+        sentence: A string of tokens.
+        time_limit: If a positive number, TimeoutError will be thrown if parsing is not finished after time_limit seconds.
+
+    Returns:
+        A single parse tree.
+    """
     split_sentence = remove_punctuation(sentence).split()
     split_sentence = remove_in_python(split_sentence)
     split_sentence = remove_specific_word(split_sentence)
@@ -402,6 +489,13 @@ def parse_sentence(sentence, time_limit=10):
 
 
 def example(sentence):
+    """
+    Args:
+        sentence: A string of tokens.
+
+    Returns:
+        A single parse tree.
+    """
     # These work
     sentence = sentence.lower()
     sentence = remove_punctuation(sentence).split()
@@ -434,6 +528,12 @@ def example(sentence):
 
 
 def postprocess_parse(parse_str):
+    """
+    Args:
+        parse_str: A single parse tree.
+
+    The final look of the parsing.
+    """
     return "({})".format(parse_str.replace(",", " ").replace("'", " "))
 
 
@@ -442,7 +542,6 @@ if __name__ == "__main__":
     # nltk.download('wordnet')
     # nltk.download('averaged_perceptron_tagger')
     # stanza.download('en')
-    import time
 
     s = time.time()
     # chart.printCCGDerivation(parse_sentence('remove everything found between instances of start_string and end_string', 100))
@@ -450,7 +549,7 @@ if __name__ == "__main__":
     # chart.printCCGDerivation(parse_sentence("returns an array of bounding boxes of human faces in a image", 100))
 
     # chart.printCCGDerivation(parse_sentence("use glob to find files recursively"))
-    tree = parse_sentence("find intersection, of nested lists from code_search_net")
+    tree = parse_sentence("find the index of an item in a list")
     parse_str = get_ccg_parse(tree)
     print(postprocess_parse(parse_str))
     print("elapsed: ", time.time() - s)
