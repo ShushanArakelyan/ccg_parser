@@ -13,6 +13,8 @@ from typing import List
 from parser_dict import STRING2PREDICATE
 from parser import parse_sentence, get_ccg_parse, postprocess_parse
 
+import multiprocessing
+from joblib import Parallel, delayed
 
 nlp = spacy.load('en_core_web_sm')
 
@@ -173,7 +175,7 @@ def filter_by_preposition(prepositions: List[str], file_path: str, out_path: str
     save_to_json(data_list, out_path)
 
 
-def ccg_parse_filtered_functions(file_path: str, out_path: str, logdir: str, time_limit: int = 15):
+def ccg_parse_filtered_functions(file_path: str, out_path: str, logdir: str, time_limit: int):
     """
     Args:
         file_path: Path to the json/jsonl file to be processed.
@@ -188,15 +190,18 @@ def ccg_parse_filtered_functions(file_path: str, out_path: str, logdir: str, tim
     df['ccg_parse'] = ''
     parsed_q_count = 0
 
+    # may change depending your folder structure
+    file_name = file_path.split('/')[4].split('.')[0]
+
     # created the directory if absent
     if not os.path.exists(logdir):
         os.mkdir(logdir)
 
-    with open(logdir + '/failed_queries.txt', 'w') as f_out, \
-            open(logdir + '/exceptions.txt', 'w') as ex_out, \
-            open(logdir + '/timeout.txt', 'w') as t_out:
+    with open(logdir + f'/{file_name}_failed_queries.txt', 'w') as f_out, \
+            open(logdir + f'/{file_name}_exceptions.txt', 'w') as ex_out, \
+            open(logdir + f'/{file_name}_timeout.txt', 'w') as t_out:
         data_gen = tqdm(df.iterrows(), total=len(df))
-        
+
         for i, file in data_gen:
             doc = ' '.join(file['docstring_tokens']).lower()
             try:
@@ -220,7 +225,25 @@ def ccg_parse_filtered_functions(file_path: str, out_path: str, logdir: str, tim
             data_gen.set_description("Success rate: {:.2f}".format(
                 float(parsed_q_count) / len(df)), refresh=True)
 
+    out_path = out_path + file_name + '.jsonl.gz'
     save_to_json(df, out_path)
+
+
+def parallel_run(data_path, out_path, log_dir, time_limit, n_jobs=14):
+    """
+    Args:
+        data_path: Path to the json/jsonl files.
+        out_path: Path to the json/jsonl files to save results in.
+        log_dir: Path to save reports in.
+        time_limit: The maximum time parsing can take.
+        n_jobs: Number of processes to run the data on.
+
+    Processes the files on multiple cores at once.
+    """
+    file_names = list_files(data_path)
+
+    Parallel(n_jobs=n_jobs)(delayed(ccg_parse_filtered_functions)(
+        file_name, out_path, log_dir, time_limit) for file_name in data_path)
 
 
 if __name__ == '__main__':
@@ -232,6 +255,7 @@ if __name__ == '__main__':
     # filter_by_preposition(prepositions, file_path='../code_search_net/train_filtered.jsonl.gz',
     #                       out_path='../code_search_net/train_filtered_preposition.jsonl.gz')
 
-    ccg_parse_filtered_functions(file_path='../code_search_net/train_token.jsonl.gz',
-                                 out_path='../code_search_net/train_parsed.jsonl.gz',
-                                 logdir='../code_search_net/train_parse')
+    parallel_run(data_path='../code_search_net/tokenized_data/',
+                 out_path='../code_search_net/ccg_parsed_data/',
+                 logdir='../code_search_net/ccg_parse_logs/',
+                 time_limit=150)
