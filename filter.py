@@ -238,7 +238,7 @@ def parallel_run(data_path, out_path, log_dir, time_limit, n_jobs=14):
         time_limit: The maximum time parsing can take.
         n_jobs: Number of processes to run the data on.
 
-    Processes the files on multiple cores at once.
+    Processes the files on multiple CPUs.
     """
     file_names = list_files(data_path)
 
